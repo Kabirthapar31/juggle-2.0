@@ -1,1 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Juggle — Medical Wordle</title>
+
+  <!-- React (UMD) -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+
+  <!-- Tailwind (CDN ok for now) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Favicon (prevents /favicon.ico 404) -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22/>">
+
+  <style>
+    :root{
+      --bg:#f8f7f4; --tile:#f0eee9; --border:#d7d3ca; --text:#1f2937;
+      --wrong:#fca5a5; --present:#f6d26b; --correct:#6bcf8b; --key:#e9e6df;
+    }
+    html,body,#root{height:100%;}
+    body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
+    .tile{background:var(--tile);border:1px solid var(--border);}
+    .tile.wrong{background:var(--wrong);color:#3b1f1f;}
+    .tile.present{background:var(--present);color:#2b1b00;}
+    .tile.correct{background:var(--correct);color:#03310a;}
+    .key{background:var(--key);border:1px solid var(--border);}
+    .shadow-soft{box-shadow:0 10px 20px rgba(0,0,0,.06);}
+    .keyboard{display:flex;flex-direction:column;gap:0.4rem;align-items:center;padding:0.4rem 0;}
+    .keyboard-row{display:flex;flex-wrap:wrap;justify-content:center;gap:0.35rem;width:100%;max-width:640px;padding:0 8px;}
+    .key-button{display:inline-flex;align-items:center;justify-content:center;padding:0.5rem 0.6rem;border-radius:14px;user-select:none;font-weight:800;text-transform:uppercase;min-width:34px;max-width:48px;flex:0 1 auto;}
+    .key-button.wide{min-width:62px;max-width:120px;}
+    @media (max-width:520px){.key-button{min-width:30px;max-width:40px;padding:0.42rem 0.36rem;font-size:0.92rem}.key-button.wide{min-width:54px;max-width:84px}}
+    .board{display:grid;grid-template-rows:repeat(6,1fr);gap:0.6rem;width:100%;max-width:420px;margin:0 auto;}
+    .board-row{display:grid;grid-template-columns:repeat(5,1fr);gap:0.6rem;}
+    .cell{aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;font-size:1.75rem;font-weight:800;border-radius:12px;letter-spacing:0.06em;}
+    .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:white;border-radius:12px;padding:8px 14px;box-shadow:0 8px 24px rgba(16,24,40,.12);font-weight:600;z-index:60;}
+    header.sticky{position:sticky;top:0;backdrop-filter:blur(6px);z-index:40;background:rgba(248,247,244,.7);border-bottom:1px solid var(--border);}
+    @media (max-width:420px){.cell{font-size:1.5rem}}
+    .muted{opacity:.75}
+    .chip{display:inline-block;background:var(--key);border:1px dashed var(--border);border-radius:9999px;padding:.18rem .6rem;font-weight:700;}
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script>
+  (function(){
+    const { useState, useEffect, useRef } = React;
+
+    /* ============================================================
+     * Your repository (broad + specific). Duplicates auto-removed.
+     * Two 6-letter entries (ASTHMA, PEPTIC) are skipped for now.
+     * ============================================================ */
+    const REPO_RAW = [
+      ["blood","Body fluid","Red cells, white cells, platelets, and plasma combined"],
+      ["brain","Control center","Organ protected by the skull that processes thoughts"],
+      ["heart","Pump organ","Four-chambered muscle that circulates blood"],
+      ["liver","Detox organ","Largest internal organ that processes nutrients"],
+      ["spine","Back support","Vertebral column protecting spinal cord"],
+      ["nerve","Signal carrier","Fiber that transmits electrical impulses"],
+      ["fever","Heat response","Elevated body temperature above 100.4°F"],
+      ["chest","Torso area","Body cavity containing heart and lungs"],
+      ["pulse","Beat rhythm","Arterial pressure wave felt at wrist"],
+      ["virus","Infectious agent","Microscopic pathogen requiring host cells"],
+      ["tumor","Abnormal growth","Mass of cells dividing uncontrollably"],
+      ["organ","Body part","Tissue structure performing specific function"],
+      ["wound","Injury site","Break in skin or tissue integrity"],
+      ["toxic","Poisonous","Substance causing cellular damage"],
+      ["acute","Sudden onset","Condition developing rapidly and severely"],
+      ["joint","Connection point","Where two bones meet and articulate"],
+      ["gland","Secreting structure","Tissue producing hormones or enzymes"],
+      ["serum","Blood component","Liquid portion after clotting removed"],
+      ["drugs","Medicine category","Chemical substances affecting body function"],
+      ["sleep","Rest state","Naturally recurring unconscious condition"],
+      ["teeth","Mouth structures","Hard calcium structures for chewing"],
+      ["bones","Skeletal parts","Calcified connective tissue framework"],
+      ["lymph","Clear fluid","Colorless fluid in lymphatic system"],
+      ["shock","Emergency state","Inadequate tissue perfusion condition"],
+      ["sweat","Body cooling","Salty fluid from eccrine glands"],
+      ["colon","Large intestine","Final section of digestive tract"],
+      ["fiber","Thread-like structure","Indigestible plant material aiding digestion"],
+      /* asthma -> 6 letters (skipped) */
+      ["latex","Rubber material","Natural polymer causing allergic reactions"],
+      ["depot","Storage area","Long-acting injection site"],
+      ["donor","Giver person","Individual providing organs or blood"],
+      ["flora","Bacterial community","Normal microorganisms in body"],
+      ["graft","Transplanted tissue","Tissue moved from one location"],
+      ["habit","Repeated behavior","Automatic behavioral pattern"],
+      ["lupus","Autoimmune disease","Systemic inflammatory connective tissue disorder"],
+      ["mania","Extreme mood","Elevated, expansive, or irritable mood"],
+      ["nasal","Nose-related","Pertaining to nasal cavity"],
+      ["optic","Eye-related","Concerning vision or eye nerves"],
+      ["panel","Test group","Series of laboratory tests"],
+      /* peptic -> 6 letters (skipped) */
+      ["renal","Kidney-related","Pertaining to kidney function"],
+      ["scalp","Head covering","Skin covering the skull"],
+      ["sinus","Air cavity","Hollow space in facial bones"],
+      ["tonic","Strengthening agent","Medicine restoring normal function"],
+      ["ulcer","Open sore","Erosion in mucous membrane"],
+      ["valve","Flow controller","Structure preventing blood backflow"],
+      ["viral","Infection type","Caused by virus particles"],
+      ["aging","Time process","Progressive physiological decline"],
+      ["blind","Vision loss","Unable to see or perceive"],
+      ["clamp","Surgical tool","Device for controlling bleeding"],
+      ["edema","Swelling condition","Excess fluid in tissues"],
+      ["fatal","Deadly outcome","Resulting in death"],
+      ["gauge","Measurement tool","Instrument for needle size"],
+      ["knife","Cutting tool","Surgical blade instrument"],
+      ["labor","Work process","Childbirth contractions phase"],
+      ["molar","Back tooth","Grinding tooth in jaw"],
+      ["nurse","Care provider","Licensed healthcare professional"],
+      ["onset","Beginning time","Initial appearance of symptoms"],
+      ["panic","Extreme fear","Sudden overwhelming anxiety attack"],
+      ["rapid","Speed description","Fast heart rate condition"],
+      ["scale","Measuring device","Weight measurement instrument"],
+      ["vital","Life signs","Essential for survival"],
+      ["waste","Disposal material","Body's unwanted byproducts"],
+      ["brace","Support device","Orthopedic stabilizing apparatus"],
+      ["chill","Cold sensation","Shivering response to fever"],
+      ["drain","Fluid removal","Tube for wound discharge"],
+      ["gouge","Deep cut","Excavated wound or injury"],
+      ["index","Reference measure","Ratio for health assessment"],
+      ["patch","Covering piece","Transdermal medication delivery"],
+      ["range","Normal limits","Reference values for tests"],
+      ["scope","Viewing instrument","Endoscopic examination tool"],
+      ["treat","Medical care","Therapeutic intervention"],
+      ["unite","Join together","Bone healing process"],
+      ["vomit","Stomach expulsion","Forceful gastric contents ejection"],
+      ["yield","Production amount","Laboratory test result quantity"]
+    ].map(([w,broad,specific]) => ({ w:w.toLowerCase(), broad, specific }));
+
+    /* de-dup + keep only 5-letter words */
+    const WORDS = Array.from(
+      new Map(REPO_RAW.filter(e => e.w.length === 5).map(e => [e.w, e])).values()
+    );
+
+    /* ===== Helpers / gameplay ===== */
+    const KEY_ROWS = [
+      ["q","w","e","r","t","y","u","i","o","p"],
+      ["a","s","d","f","g","h","j","k","l"],
+      ["enter","z","x","c","v","b","n","m","back"]
+    ];
+    function norm5(s){ return String(s||"").normalize("NFKC").toLowerCase().replace(/[^a-z]/g,"").slice(0,5); }
+    function scoreGuess(guess, answer){
+      const res = Array(5).fill("wrong"), used = Array(5).fill(false);
+      for(let i=0;i<5;i++){ if(guess[i]===answer[i]){ res[i]="correct"; used[i]=true; } }
+      for(let i=0;i<5;i++){
+        if(res[i]==="correct") continue;
+        for(let j=0;j<5;j++){
+          if(!used[j] && guess[i]===answer[j]){ res[i]="present"; used[j]=true; break; }
+        }
+      }
+      return res;
+    }
+    function pickEntry(){ return WORDS[Math.floor(Math.random()*WORDS.length)]; }
+    function getCSS(key){ return getComputedStyle(document.documentElement).getPropertyValue(key).trim(); }
+
+    /* ===== Header & Home (old UI) ===== */
+    function Header({mode,setMode}){
+      return (
+        React.createElement('header', { className:'sticky top-0 z-30' },
+          React.createElement('div', { className:'max-w-[960px] mx-auto px-4 py-3 flex items-center justify-between' },
+            React.createElement('div', { className:'flex items-center gap-2' },
+              React.createElement('h1', { className:'text-2xl font-extrabold tracking-tight' }, 'Juggle',
+                React.createElement('span', { className:'ml-2 text-sm font-medium muted' }, 'medical wordle')
+              )
+            ),
+            React.createElement('div', { className:'flex items-center gap-2 text-sm' },
+              React.createElement('span', { className:'muted' }, 'Mode:'),
+              React.createElement('button', { onClick: ()=> setMode('easy'), className:`px-3 py-2 rounded-2xl key font-semibold ${mode==='easy'?'ring-1':''}` }, 'Easy'),
+              React.createElement('button', { onClick: ()=> setMode('diff'), className:`px-3 py-2 rounded-2xl key font-semibold ${mode==='diff'?'ring-1':''}` }, 'Diff')
+            )
+          )
+        )
+      );
+    }
+
+    function Home({ onPlay }){
+      return (
+        React.createElement('div', { className:'min-h-[60vh] w-full flex items-center justify-center px-4' },
+          React.createElement('div', { className:'text-center max-w-xl' },
+            React.createElement('h2', { className:'text-3xl sm:text-4xl font-extrabold mb-2' }, 'Welcome to Juggle'),
+            React.createElement('p', { className:'muted mb-6' }, 'Guess the 5-letter medical word in 6 tries.'),
+            React.createElement('button', { onClick:onPlay, className:'px-5 py-3 rounded-2xl key font-bold hover:opacity-90 shadow-soft' }, 'Play now'),
+            React.createElement('details', { className:'mt-5 key rounded-2xl p-4 text-sm text-left shadow-soft' },
+              React.createElement('summary', { className:'cursor-pointer font-bold' }, 'How to play'),
+              React.createElement('div', { className:'mt-2' },
+                'Type a 5-letter word and press Enter. Tile colors: ',
+                React.createElement('b', null, 'green'),
+                ' = correct, ',
+                React.createElement('b', null, 'yellow'),
+                ' = present, ',
+                React.createElement('b', null, 'red'),
+                ' = wrong. ',
+                'In Easy mode, fixed letters are revealed each row (1 → 2 → 3). ',
+                'A broad hint is available; a specific one appears after 3 guesses.'
+              )
+            )
+          )
+        )
+      );
+    }
+
+    /* ===== Game (old UI, no lock icon; uses your hints) ===== */
+    function Game({ mode, onExit }){
+      const [answer,setAnswer]=useState("");
+      const [broad,setBroad]=useState("");
+      const [specific,setSpecific]=useState("");
+      const [revealIdx,setRevealIdx]=useState([]); // 3 positions
+      const [rows,setRows]=useState(Array(6).fill(""));
+      const [states,setStates]=useState(Array(6).fill(Array(5).fill("empty")));
+      const [typed,setTyped]=useState(Array(5).fill(""));
+      const [row,setRow]=useState(0);
+      const [over,setOver]=useState(false);
+      const [toast,setToast]=useState(null);
+      const [showHints,setShowHints]=useState(false); // light-bulb toggle (optional)
+      const inputRef = useRef(null);
+
+      useEffect(()=>{ start(); },[mode]);
+      function start(){
+        const e = pickEntry();
+        setAnswer(e.w); setBroad(e.broad); setSpecific(e.specific);
+        setRevealIdx(mode==='easy'? pickThreeIndices() : []);
+        setRows(Array(6).fill("")); setStates(Array(6).fill(Array(5).fill("empty")));
+        setTyped(Array(5).fill("")); setRow(0); setOver(false); setShowHints(false);
+      }
+
+      function pickThreeIndices(){
+        const idx=[0,1,2,3,4];
+        for(let i=idx.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [idx[i],idx[j]]=[idx[j],idx[i]]; }
+        return idx.slice(0,3).sort();
+      }
+
+      useEffect(()=>{
+        function onKey(e){
+          const k=e.key.toLowerCase();
+          if(k==='enter') return handleEnter();
+          if(k==='backspace') return handleBack();
+          if(/^[a-z]$/.test(k)) return handleChar(k);
+        }
+        if(!over) window.addEventListener('keydown',onKey);
+        return ()=> window.removeEventListener('keydown',onKey);
+      },[typed,row,over,answer,mode]);
+
+      function ping(msg){ setToast(msg); setTimeout(()=> setToast(null), 1200); }
+
+      function revealedCountForRow(r){
+        if(mode!=='easy') return 0;
+        if(r===0) return 1; if(r===1) return 2; return 3;
+      }
+      function revealedSetForRow(r){
+        const n=revealedCountForRow(r);
+        return new Set(revealIdx.slice(0,n));
+      }
+
+      function currentRowString(){
+        const pref=revealedSetForRow(row);
+        const arr=Array(5).fill("");
+        for(let i=0;i<5;i++){
+          if(pref.has(i)) arr[i]=answer[i];  // prefilled (no lock icon)
+          else arr[i]=typed[i]||"";
+        }
+        return arr.join("");
+      }
+
+      function handleChar(ch){
+        if(over||row>=6) return;
+        const pref=revealedSetForRow(row);
+        for(let i=0;i<5;i++){
+          if(!pref.has(i) && !typed[i]){
+            const next=typed.slice(); next[i]=ch; setTyped(next); return;
+          }
+        }
+      }
+      function handleBack(){
+        if(over) return;
+        const pref=revealedSetForRow(row);
+        for(let i=4;i>=0;i--){
+          if(!pref.has(i) && typed[i]){
+            const next=typed.slice(); next[i]=""; setTyped(next); return;
+          }
+        }
+      }
+      function handleEnter(){
+        if(over) return;
+        const guess=currentRowString();
+        if(guess.length!==5 || /[^a-z]/.test(guess)){ ping("Enter a 5-letter word"); return; }
+
+        const sc=scoreGuess(guess,answer);
+        const ns=states.slice(); ns[row]=sc; setStates(ns);
+        const nr=rows.slice(); nr[row]=guess; setRows(nr);
+
+        if(guess===answer){ setOver(true); }
+        else if(row===5){ setOver(true); }
+        else { setRow(row+1); setTyped(Array(5).fill("")); }
+      }
+
+      function keyColor(k){
+        let state="";
+        for(let r=0;r<row;r++){
+          for(let c=0;c<5;c++){
+            if((rows[r]||"")[c]===k){
+              const st=(states[r]||[])[c];
+              if(st==="correct") return getCSS('--correct');
+              if(st==="present") state="present";
+              else if(st==="wrong" && state!=="present") state="wrong";
+            }
+          }
+        }
+        if(state==="present") return getCSS('--present');
+        if(state==="wrong") return getCSS('--wrong');
+        return getCSS('--key');
+      }
+
+      const showSpecific = (mode==='easy') && (row>=3 || over);
+
+      return (
+        React.createElement('div', { className:'w-full max-w-[820px] px-4 pb-14 mx-auto' },
+
+          /* Top controls */
+          React.createElement('div', { className:'flex items-center justify-between py-3 text-sm muted' },
+            React.createElement('div', null,
+              'Mode: ', React.createElement('span', { className:'font-semibold text-black/80' }, mode==='easy'?'Easy':'Diff')
+            ),
+            React.createElement('div', null,
+              React.createElement('button', { onClick:start, className:'px-3 py-2 rounded-2xl key font-semibold hover:opacity-90 shadow-soft mr-2' }, 'New Game'),
+              React.createElement('button', { onClick:onExit, className:'px-3 py-2 rounded-2xl key font-semibold hover:opacity-90' }, 'Home')
+            )
+          ),
+
+          /* Hints (behind light-bulb toggle; broad from start, specific after 3 guesses) */
+          React.createElement('div', { className:'mb-3' },
+            React.createElement('button', {
+              className:'px-3 py-2 rounded-2xl key font-semibold shadow-soft',
+              onClick:()=> setShowHints(v=>!v)
+            }, '💡 Hints ', showHints ? '— Hide' : '— Show')
+          ),
+          (mode==='easy' && showHints) && React.createElement('div', { className:'key rounded-2xl p-3 shadow-soft mb-1 text-sm' },
+            React.createElement('div', { className:'flex flex-col gap-1' },
+              React.createElement('div', null,
+                React.createElement('span', { className:'chip mr-2' }, 'Broad'),
+                React.createElement('span', { className:'opacity-85' }, broad || '—')
+              ),
+              showSpecific
+                ? React.createElement('div', null,
+                    React.createElement('span', { className:'chip mr-2' }, 'Specific'),
+                    React.createElement('span', { className:'opacity-90' }, specific || '—')
+                  )
+                : React.createElement('div', { className:'opacity-70' }, '(Specific hint unlocks after 3 guesses)')
+            ),
+            React.createElement('div', { className:'mt-2' },
+              React.createElement('span', { className:'chip mr-2' }, 'Revealed'),
+              revealIdx.slice(0, (row===0?1:row===1?2:3)).map((i,ix)=>
+                React.createElement('span', { key:ix, className:'chip mr-1' }, (answer?answer[i].toUpperCase():'?'), ' @ ', (i+1))
+              )
+            )
+          ),
+
+          /* Hidden input to raise mobile keyboard when board tapped */
+          React.createElement('input', { ref: inputRef, className:'absolute opacity-0 pointer-events-none',
+            autoCapitalize:'none',autoComplete:'off',autoCorrect:'off'
+          }),
+
+          /* Board */
+          React.createElement('div', { className:'board my-4', onClick:()=> inputRef.current && inputRef.current.focus() },
+            Array.from({length:6}).map((_, r) =>
+              React.createElement('div', { key:r, className:'board-row' },
+                Array.from({length:5}).map((_, c) => {
+                  const pref = new Set(revealIdx.slice(0, (mode==='easy' ? (r===0?1:r===1?2:3) : 0)));
+                  let ch='', st='empty';
+                  if(r < row || (r===row && rows[r])){ ch = (rows[r]||'')[c] || ''; st = (states[r]||[])[c] || 'empty'; }
+                  else if(r===row){ ch = pref.has(c) ? (answer[c]||'').toUpperCase() : (typed[c]||'').toUpperCase(); }
+                  return React.createElement('div', { key:c, className:`tile cell ${st!=='empty'?st:''}` }, ch);
+                })
+              )
+            )
+          ),
+
+          /* Outcome banner */
+          over && React.createElement('div', { className:'key rounded-2xl p-4 text-center mb-3 shadow-soft' },
+            (rows[row]===answer)
+              ? React.createElement('div', null,
+                  React.createElement('div', { className:'text-lg font-extrabold' }, 'Nice one! 🎉'),
+                  React.createElement('div', { className:'muted mt-1' }, 'You nailed it. Up for another?')
+                )
+              : React.createElement('div', null,
+                  React.createElement('div', { className:'text-lg font-extrabold' }, 'Not this time.'),
+                  React.createElement('div', { className:'muted mt-1' }, 'Take another shot — life is all about second chances.')
+                )
+          ),
+
+          /* On-screen keyboard */
+          React.createElement('div', { className:'keyboard' },
+            KEY_ROWS.map((rowKeys, i) =>
+              React.createElement('div', { key:i, className:'keyboard-row' },
+                rowKeys.map(k =>
+                  React.createElement('button', {
+                    key:k, onClick: ()=> { if(k==='enter') handleEnter(); else if(k==='back') handleBack(); else handleChar(k); },
+                    disabled: over,
+                    className: 'key-button ' + (k.length>1 ? 'wide' : '') + ' rounded-2xl font-semibold key',
+                    style:{ background:keyColor(k), border:`1px solid var(--border)`, opacity: over?0.6:1 }
+                  }, k==='back'?'⌫':k)
+                )
+              )
+            )
+          ),
+
+          toast ? React.createElement('div', { className:'toast' }, toast) : null
+        )
+      );
+    }
+
+    /* ===== App shell ===== */
+    function App(){
+      const [view,setView]=useState('HOME');
+      const [mode,setMode]=useState('easy');
+      return (
+        React.createElement('div', { className:'min-h-screen w-full' },
+          React.createElement(Header, { mode, setMode }),
+          view==='HOME' && React.createElement(Home, { onPlay: ()=> setView('GAME') }),
+          view==='GAME' && React.createElement(Game, { mode, onExit: ()=> setView('HOME') })
+        )
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(React.createElement(App));
+  })();
+  </script>
+</body>
+</html>
 
