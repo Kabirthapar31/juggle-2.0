@@ -51,107 +51,100 @@
   (function(){
     const { useState, useEffect, useRef } = React;
 
-    /* ===== Repository (answers) — 5-letter medical words with hints (UPPERCASE) ===== */
-    const REPO = [
-      ["BLOOD","Body fluid","Red cells, white cells, platelets, and plasma combined"],
-      ["BRAIN","Control center","Organ protected by the skull that processes thoughts"],
-      ["HEART","Pump organ","Four-chambered muscle that circulates blood"],
-      ["LIVER","Detox organ","Largest internal organ that processes nutrients"],
-      ["SPINE","Back support","Vertebral column protecting spinal cord"],
-      ["NERVE","Signal carrier","Fiber that transmits electrical impulses"],
-      ["FEVER","Heat response","Elevated body temperature above 100.4°F"],
-      ["CHEST","Torso area","Body cavity containing heart and lungs"],
-      ["PULSE","Beat rhythm","Arterial pressure wave felt at wrist"],
-      ["VIRUS","Infectious agent","Microscopic pathogen requiring host cells"],
-      ["TUMOR","Abnormal growth","Mass of cells dividing uncontrollably"],
-      ["ORGAN","Body part","Tissue structure performing specific function"],
-      ["WOUND","Injury site","Break in skin or tissue integrity"],
-      ["TOXIC","Poisonous","Substance causing cellular damage"],
-      ["ACUTE","Sudden onset","Condition developing rapidly and severely"],
-      ["JOINT","Connection point","Where two bones meet and articulate"],
-      ["GLAND","Secreting structure","Tissue producing hormones or enzymes"],
-      ["SERUM","Blood component","Liquid portion after clotting removed"],
-      ["DRUGS","Medicine category","Chemical substances affecting body function"],
-      ["SLEEP","Rest state","Naturally recurring unconscious condition"],
-      ["TEETH","Mouth structures","Hard calcium structures for chewing"],
-      ["BONES","Skeletal parts","Calcified connective tissue framework"],
-      ["LYMPH","Clear fluid","Colorless fluid in lymphatic system"],
-      ["SHOCK","Emergency state","Inadequate tissue perfusion condition"],
-      ["SWEAT","Body cooling","Salty fluid from eccrine glands"],
-      ["COLON","Large intestine","Final section of digestive tract"],
-      ["FIBER","Thread-like structure","Indigestible plant material aiding digestion"],
-      ["LATEX","Rubber material","Natural polymer causing allergic reactions"],
-      ["DEPOT","Storage area","Long-acting injection site"],
-      ["DONOR","Giver person","Individual providing organs or blood"],
-      ["FLORA","Bacterial community","Normal microorganisms in body"],
-      ["GRAFT","Transplanted tissue","Tissue moved from one location"],
-      ["HABIT","Repeated behavior","Automatic behavioral pattern"],
-      ["LUPUS","Autoimmune disease","Systemic inflammatory connective tissue disorder"],
-      ["MANIA","Extreme mood","Elevated, expansive, or irritable mood"],
-      ["NASAL","Nose-related","Pertaining to nasal cavity"],
-      ["OPTIC","Eye-related","Concerning vision or eye nerves"],
-      ["PANEL","Test group","Series of laboratory tests"],
-      ["RENAL","Kidney-related","Pertaining to kidney function"],
-      ["SCALP","Head covering","Skin covering the skull"],
-      ["SINUS","Air cavity","Hollow space in facial bones"],
-      ["TONIC","Strengthening agent","Medicine restoring normal function"],
-      ["ULCER","Open sore","Erosion in mucous membrane"],
-      ["VALVE","Flow controller","Structure preventing blood backflow"],
-      ["VIRAL","Infection type","Caused by virus particles"],
-      ["AGING","Time process","Progressive physiological decline"],
-      ["BLIND","Vision loss","Unable to see or perceive"],
-      ["CLAMP","Surgical tool","Device for controlling bleeding"],
-      ["EDEMA","Swelling condition","Excess fluid in tissues"],
-      ["FATAL","Deadly outcome","Resulting in death"],
-      ["GAUGE","Measurement tool","Instrument for needle size"],
-      ["KNIFE","Cutting tool","Surgical blade instrument"],
-      ["LABOR","Work process","Childbirth contractions phase"],
-      ["MOLAR","Back tooth","Grinding tooth in jaw"],
-      ["NURSE","Care provider","Licensed healthcare professional"],
-      ["ONSET","Beginning time","Initial appearance of symptoms"],
-      ["PANIC","Extreme fear","Sudden overwhelming anxiety attack"],
-      ["RAPID","Speed description","Fast heart rate condition"],
-      ["SCALE","Measuring device","Weight measurement instrument"],
-      ["VITAL","Life signs","Essential for survival"],
-      ["WASTE","Disposal material","Body's unwanted byproducts"],
-      ["BRACE","Support device","Orthopedic stabilizing apparatus"],
-      ["CHILL","Cold sensation","Shivering response to fever"],
-      ["DRAIN","Fluid removal","Tube for wound discharge"],
-      ["GOUGE","Deep cut","Excavated wound or injury"],
-      ["INDEX","Reference measure","Ratio for health assessment"],
-      ["PATCH","Covering piece","Transdermal medication delivery"],
-      ["RANGE","Normal limits","Reference values for tests"],
-      ["SCOPE","Viewing instrument","Endoscopic examination tool"],
-      ["TREAT","Medical care","Therapeutic intervention"],
-      ["UNITE","Join together","Bone healing process"],
-      ["VOMIT","Stomach expulsion","Forceful gastric contents ejection"],
-      ["YIELD","Production amount","Laboratory test result quantity"]
+    /* ===== Curated medical 5-letter answers (UPPERCASE) with one-liner hints ===== */
+    const TARGETS = [
+      { w:"BLOOD", specific:"Red cells, white cells, platelets, and plasma combined" },
+      { w:"BRAIN", specific:"Organ protected by the skull that processes thoughts" },
+      { w:"HEART", specific:"Four-chambered muscle that circulates blood" },
+      { w:"LIVER", specific:"Largest internal organ that processes nutrients" },
+      { w:"SPINE", specific:"Vertebral column protecting spinal cord" },
+      { w:"NERVE", specific:"Fiber that transmits electrical impulses" },
+      { w:"FEVER", specific:"Elevated body temperature above 100.4°F" },
+      { w:"CHEST", specific:"Body cavity containing heart and lungs" },
+      { w:"PULSE", specific:"Arterial pressure wave felt at wrist" },
+      { w:"VIRUS", specific:"Microscopic pathogen requiring host cells" },
+      { w:"TUMOR", specific:"Mass of cells dividing uncontrollably" },
+      { w:"ORGAN", specific:"Tissue structure performing specific function" },
+      { w:"WOUND", specific:"Break in skin or tissue integrity" },
+      { w:"TOXIC", specific:"Substance causing cellular damage" },
+      { w:"ACUTE", specific:"Condition developing rapidly and severely" },
+      { w:"JOINT", specific:"Where two bones meet and articulate" },
+      { w:"GLAND", specific:"Tissue producing hormones or enzymes" },
+      { w:"SERUM", specific:"Liquid portion of blood after clotting" },
+      { w:"DRUGS", specific:"Chemical substances affecting body function" },
+      { w:"SLEEP", specific:"Naturally recurring unconscious condition" },
+      { w:"TEETH", specific:"Hard calcium structures for chewing" },
+      { w:"BONES", specific:"Calcified connective tissue framework" },
+      { w:"LYMPH", specific:"Colorless fluid in lymphatic system" },
+      { w:"SHOCK", specific:"Inadequate tissue perfusion condition" },
+      { w:"SWEAT", specific:"Salty fluid from eccrine glands" },
+      { w:"COLON", specific:"Final section of digestive tract" },
+      { w:"FIBER", specific:"Indigestible plant material aiding digestion" },
+      { w:"LATEX", specific:"Natural polymer causing allergic reactions" },
+      { w:"DEPOT", specific:"Long-acting injection site" },
+      { w:"DONOR", specific:"Individual providing organs or blood" },
+      { w:"FLORA", specific:"Normal microorganisms in the body" },
+      { w:"GRAFT", specific:"Tissue moved from one location" },
+      { w:"HABIT", specific:"Automatic behavioral pattern" },
+      { w:"LUPUS", specific:"Systemic inflammatory autoimmune disorder" },
+      { w:"MANIA", specific:"Elevated, expansive, or irritable mood" },
+      { w:"NASAL", specific:"Pertaining to the nasal cavity" },
+      { w:"OPTIC", specific:"Concerning vision or eye nerves" },
+      { w:"PANEL", specific:"Series of laboratory tests" },
+      { w:"RENAL", specific:"Pertaining to kidney function" },
+      { w:"SCALP", specific:"Skin covering the skull" },
+      { w:"SINUS", specific:"Hollow air space in facial bones" },
+      { w:"TONIC", specific:"Medicine restoring normal function" },
+      { w:"ULCER", specific:"Erosion in mucous membrane" },
+      { w:"VALVE", specific:"Structure preventing blood backflow" },
+      { w:"VIRAL", specific:"Caused by virus particles" },
+      { w:"AGING", specific:"Progressive physiological decline" },
+      { w:"BLIND", specific:"Unable to see or perceive" },
+      { w:"CLAMP", specific:"Device for controlling bleeding" },
+      { w:"EDEMA", specific:"Excess fluid in tissues" },
+      { w:"FATAL", specific:"Resulting in death" },
+      { w:"GAUGE", specific:"Instrument for needle size" },
+      { w:"KNIFE", specific:"Surgical blade instrument" },
+      { w:"LABOR", specific:"Childbirth contractions phase" },
+      { w:"MOLAR", specific:"Grinding tooth in jaw" },
+      { w:"NURSE", specific:"Licensed healthcare professional" },
+      { w:"ONSET", specific:"Initial appearance of symptoms" },
+      { w:"PANIC", specific:"Sudden overwhelming anxiety attack" },
+      { w:"RAPID", specific:"Fast heart rate condition" },
+      { w:"SCALE", specific:"Weight measurement instrument" },
+      { w:"VITAL", specific:"Essential for survival" },
+      { w:"WASTE", specific:"Body's unwanted byproducts" },
+      { w:"BRACE", specific:"Orthopedic stabilizing apparatus" },
+      { w:"CHILL", specific:"Shivering response to fever" },
+      { w:"DRAIN", specific:"Tube for wound discharge" },
+      { w:"GOUGE", specific:"Excavated wound or injury" },
+      { w:"INDEX", specific:"Ratio for health assessment" },
+      { w:"PATCH", specific:"Transdermal medication delivery" },
+      { w:"RANGE", specific:"Reference values for tests" },
+      { w:"SCOPE", specific:"Endoscopic examination tool" },
+      { w:"TREAT", specific:"Therapeutic intervention" },
+      { w:"UNITE", specific:"Bone healing process" },
+      { w:"VOMIT", specific:"Forceful gastric contents ejection" },
+      { w:"YIELD", specific:"Laboratory test result quantity" }
     ];
+    const TARGET_SET = new Set(TARGETS.map(t => t.w));
 
-    const TARGETS = REPO.map(([w,b,s]) => ({ w, broad:b, specific:s }));
-    const TARGET_SET = new Set(TARGETS.map(e => e.w)); // for instant membership checks
-
-    /* ===== Allowed guesses: dynamic via dictionary API + our target set =====
-       We cache results in localStorage under 'dict:WORD' = '1' (valid) | '0' (invalid) */
+    /* ===== Allowed guesses: dictionary API + curated target list (cache results) ===== */
     async function isEnglishWord(wordUpper){
-      if (TARGET_SET.has(wordUpper)) return true; // always allow our curated targets
-
+      if (TARGET_SET.has(wordUpper)) return true; // always allow curated answers
       const key = 'dict:'+wordUpper;
       try {
         const cached = localStorage.getItem(key);
         if (cached === '1') return true;
         if (cached === '0') return false;
-      } catch (_) {}
-
-      // Query free dictionary API (lowercase path)
+      } catch(_) {}
       try {
-        const res = await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/'+wordUpper.toLowerCase(), { method:'GET' });
+        const res = await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/'+wordUpper.toLowerCase());
         const ok = res.ok;
         try { localStorage.setItem(key, ok ? '1' : '0'); } catch(_) {}
         return ok;
-      } catch (e) {
-        // Network failed: be strict to avoid "random" nonsense
-        return false;
+      } catch(_) {
+        return false; // be strict on network failure
       }
     }
 
@@ -163,8 +156,9 @@
     ];
     function toUpperAlpha(s){ return String(s||"").normalize("NFKC").toUpperCase().replace(/[^A-Z]/g,"").slice(0,5); }
     function getCSS(key){ return getComputedStyle(document.documentElement).getPropertyValue(key).trim(); }
+    function pickEntry(){ return TARGETS[Math.floor(Math.random()*TARGETS.length)]; }
 
-    // True Wordle-like scoring (handles duplicates). Expects UPPERCASE.
+    // Wordle-like scoring with duplicate handling (expects UPPERCASE)
     function scoreGuess(guess, answer){
       const res = Array(5).fill("wrong");
       const counts = {};
@@ -180,9 +174,7 @@
       return res;
     }
 
-    function pickEntry(){ return TARGETS[Math.floor(Math.random()*TARGETS.length)]; }
-
-    /* ===== UI shell ===== */
+    /* ===== UI: Header & Home ===== */
     function Header(){
       return (
         React.createElement('header', { className:'sticky top-0 z-30' },
@@ -219,18 +211,20 @@
       );
     }
 
-    /* ===== Game with ALL CAPS + Dictionary Validation ===== */
+    /* ===== Game (ALL CAPS + no broad hint + ad-gated hints + dictionary validation) ===== */
     function Game({ onExit }){
       const [answer,setAnswer]=useState("BRAIN");
       const [specific,setSpecific]=useState("");
+
       const [rows,setRows]=useState(Array(6).fill(""));
       const [states,setStates]=useState(Array(6).fill(Array(5).fill("empty")));
       const [typed,setTyped]=useState(Array(5).fill(""));
       const [row,setRow]=useState(0);
       const [over,setOver]=useState(false);
       const [toast,setToast]=useState(null);
+      const [checkingWord,setCheckingWord]=useState(false);
 
-      // Hint UI (ad-gated)
+      // Hint UI (no broad hint)
       const [showHints,setShowHints]=useState(false);
       const [hintFirst,setHintFirst]=useState(false);
       const [hintSecond,setHintSecond]=useState(false);
@@ -243,15 +237,22 @@
       const adTimerRef = useRef(null);
 
       const inputRef = useRef(null);
-      const [checkingWord,setCheckingWord]=useState(false);
 
       useEffect(()=>{ start(); return cleanupAd; },[]);
       function start(){
         const e = pickEntry();
-        setAnswer(e.w); setBroad(e.broad); setSpecific(e.specific);
-        setRows(Array(6).fill("")); setStates(Array(6).fill(Array(5).fill("empty")));
-        setTyped(Array(5).fill("")); setRow(0); setOver(false);
-        setShowHints(false); setHintFirst(false); setHintSecond(false); setHintDesc(false);
+        setAnswer(e.w);
+        setSpecific(e.specific);
+
+        setRows(Array(6).fill(""));
+        setStates(Array(6).fill(Array(5).fill("empty")));
+        setTyped(Array(5).fill(""));
+        setRow(0);
+        setOver(false);
+
+        setShowHints(false);
+        setHintFirst(false); setHintSecond(false); setHintDesc(false);
+
         cleanupAd();
       }
 
@@ -369,64 +370,64 @@
               onClick:()=> setShowHints(v=>!v),
               'aria-pressed': showHints
             },
-              React.createElement('svg', { width:18, height:18, viewBox:"0 0 24 24", fill:"none", xmlns:"http://www.w3.org/2000/svg", 'aria-hidden':true },
-                React.createElement('path', { d:"M9 21h6m-8-3h10M12 3a7 7 0 00-4 12c.6.6 1 1.5 1 2.5V18h6v-.5c0-1 .4-1.9 1-2.5A7 7 0 0012 3z", stroke:"currentColor", 'stroke-width':1.6, 'stroke-linecap':'round', 'stroke-linejoin':'round' })
+              React.createElement('svg', {
+                width:18, height:18, viewBox:"0 0 24 24", fill:"none",
+                xmlns:"http://www.w3.org/2000/svg", 'aria-hidden':true
+              },
+                React.createElement('path', {
+                  d:"M9 21h6m-8-3h10M12 3a7 7 0 00-4 12c.6.6 1 1.5 1 2.5V18h6v-.5c0-1 .4-1.9 1-2.5A7 7 0 0012 3z",
+                  stroke:"currentColor", strokeWidth:1.6, strokeLinecap:"round", strokeLinejoin:"round"
+                })
               ),
               showHints ? 'HIDE HINTS' : 'SHOW HINTS'
             )
           ),
 
-         /* Hints panel (letters are NOT auto-filled on the grid) */
-showHints && React.createElement('div', { className:'key rounded-2xl p-3 shadow-soft mb-2 text-sm' },
-  React.createElement('div', { className:'space-y-2' },
+          /* Hints panel (no broad hint) */
+          showHints && React.createElement('div', { className:'key rounded-2xl p-3 shadow-soft mb-2 text-sm' },
+            React.createElement('div', { className:'space-y-2' },
 
-    React.createElement('div', { className:'flex items-center justify-between' },
-      React.createElement('div', null,
-        React.createElement('span', { className:'chip mr-2' }, 'HINT 1'),
-        React.createElement('span', { className:'opacity-85' },
-          hintFirst ? `STARTING LETTER: ${answer[0]}` : 'REVEAL STARTING LETTER'
-        )
-      ),
-      React.createElement('button', {
-        className:'px-3 py-1 rounded-2xl key font-semibold hover:opacity-90 shadow-soft',
-        onClick: unlockFirst,
-        disabled: hintFirst
-      }, hintFirst ? 'UNLOCKED' : 'WATCH AD')
-    ),
+              React.createElement('div', { className:'flex items-center justify-between' },
+                React.createElement('div', null,
+                  React.createElement('span', { className:'chip mr-2' }, 'HINT 1'),
+                  React.createElement('span', { className:'opacity-85' },
+                    hintFirst ? `STARTING LETTER: ${answer[0]}` : 'REVEAL STARTING LETTER'
+                  )
+                ),
+                React.createElement('button', {
+                  className:'px-3 py-1 rounded-2xl key font-semibold hover:opacity-90 shadow-soft',
+                  onClick: unlockFirst,
+                  disabled: hintFirst
+                }, hintFirst ? 'UNLOCKED' : 'WATCH AD')
+              ),
 
-    React.createElement('div', { className:'flex items-center justify-between' },
-      React.createElement('div', null,
-        React.createElement('span', { className:'chip mr-2' }, 'HINT 2'),
-        React.createElement('span', { className:'opacity-85' },
-          hintSecond ? `SECOND LETTER: ${answer[1]}` : 'REVEAL SECOND LETTER'
-        )
-      ),
-      React.createElement('button', {
-        className:'px-3 py-1 rounded-2xl key font-semibold hover:opacity-90 shadow-soft',
-        onClick: unlockSecond,
-        disabled: hintSecond
-      }, hintSecond ? 'UNLOCKED' : 'WATCH AD')
-    ),
+              React.createElement('div', { className:'flex items-center justify-between' },
+                React.createElement('div', null,
+                  React.createElement('span', { className:'chip mr-2' }, 'HINT 2'),
+                  React.createElement('span', { className:'opacity-85' },
+                    hintSecond ? `SECOND LETTER: ${answer[1]}` : 'REVEAL SECOND LETTER'
+                  )
+                ),
+                React.createElement('button', {
+                  className:'px-3 py-1 rounded-2xl key font-semibold hover:opacity-90 shadow-soft',
+                  onClick: unlockSecond,
+                  disabled: hintSecond
+                }, hintSecond ? 'UNLOCKED' : 'WATCH AD')
+              ),
 
-    React.createElement('div', { className:'flex items-center justify-between' },
-      React.createElement('div', null,
-        React.createElement('span', { className:'chip mr-2' }, 'HINT 3'),
-        React.createElement('span', { className:'opacity-90' },
-          hintDesc ? specific : 'REVEAL ONE-LINER'
-        )
-      ),
-      React.createElement('button', {
-        className:'px-3 py-1 rounded-2xl key font-semibold hover:opacity-90 shadow-soft',
-        onClick: unlockDesc,
-        disabled: hintDesc
-      }, hintDesc ? 'UNLOCKED' : 'WATCH AD')
-    )
-  )
-)
-
-            React.createElement('div', { className:'mt-2' },
-              React.createElement('span', { className:'chip mr-2' }, 'BROAD HINT'),
-              React.createElement('span', { className:'opacity-90' }, broad)
+              React.createElement('div', { className:'flex items-center justify-between' },
+                React.createElement('div', null,
+                  React.createElement('span', { className:'chip mr-2' }, 'HINT 3'),
+                  React.createElement('span', { className:'opacity-90' },
+                    hintDesc ? specific : 'REVEAL ONE-LINER'
+                  )
+                ),
+                React.createElement('button', {
+                  className:'px-3 py-1 rounded-2xl key font-semibold hover:opacity-90 shadow-soft',
+                  onClick: unlockDesc,
+                  disabled: hintDesc
+                }, hintDesc ? 'UNLOCKED' : 'WATCH AD')
+              )
             )
           ),
 
@@ -436,7 +437,7 @@ showHints && React.createElement('div', { className:'key rounded-2xl p-3 shadow-
             autoCapitalize:'characters', autoComplete:'off', autoCorrect:'off'
           }),
 
-          /* Board (ALL CAPS) */
+          /* Board (ALL CAPS, no auto letters) */
           React.createElement('div', { className:'board my-4', onClick:()=> inputRef.current && inputRef.current.focus() },
             Array.from({length:6}).map((_, r) =>
               React.createElement('div', { key:r, className:'board-row' },
@@ -450,7 +451,7 @@ showHints && React.createElement('div', { className:'key rounded-2xl p-3 shadow-
             )
           ),
 
-          /* Outcome banner */
+          /* Outcome message */
           over && React.createElement('div', { className:'key rounded-2xl p-4 text-center mb-3 shadow-soft' },
             (rows[row]===answer)
               ? React.createElement('div', null,
@@ -473,7 +474,7 @@ showHints && React.createElement('div', { className:'key rounded-2xl p-3 shadow-
                     onClick: ()=> {
                       if(k==='ENTER') handleEnter();
                       else if(k==='BACK') handleBack();
-                      else handleChar(k); // k is already uppercase
+                      else handleChar(k); // already uppercase
                     },
                     disabled: over,
                     className: 'key-button ' + ((k==='ENTER'||k==='BACK') ? 'wide' : '') + ' rounded-2xl font-semibold key',
@@ -484,9 +485,8 @@ showHints && React.createElement('div', { className:'key rounded-2xl p-3 shadow-
             )
           ),
 
+          /* Toast & Ad modal */
           toast ? React.createElement('div', { className:'toast' }, toast) : null,
-
-          /* Simulated Ad Modal (replace with real rewarded ads SDK later) */
           adOpen && React.createElement('div', { className:'modal-backdrop' },
             React.createElement('div', { className:'bg-white rounded-2xl p-5 w-[min(92vw,420px)] shadow-soft text-center' },
               React.createElement('div', { className:'text-lg font-extrabold mb-1' }, 'AD BREAK'),
