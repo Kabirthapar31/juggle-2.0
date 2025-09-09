@@ -222,7 +222,6 @@
     /* ===== Game with ALL CAPS + Dictionary Validation ===== */
     function Game({ onExit }){
       const [answer,setAnswer]=useState("BRAIN");
-      const [broad,setBroad]=useState("");
       const [specific,setSpecific]=useState("");
       const [rows,setRows]=useState(Array(6).fill(""));
       const [states,setStates]=useState(Array(6).fill(Array(5).fill("empty")));
