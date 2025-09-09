@@ -30,18 +30,17 @@
     .shadow-soft{box-shadow:0 10px 20px rgba(0,0,0,.06);}
     .keyboard{display:flex;flex-direction:column;gap:0.4rem;align-items:center;padding:0.4rem 0;}
     .keyboard-row{display:flex;flex-wrap:wrap;justify-content:center;gap:0.35rem;width:100%;max-width:640px;padding:0 8px;}
-    .key-button{display:inline-flex;align-items:center;justify-content:center;padding:0.5rem 0.6rem;border-radius:14px;user-select:none;font-weight:800;text-transform:uppercase;min-width:34px;max-width:48px;flex:0 1 auto;}
+    .key-button{display:inline-flex;align-items:center;justify-content:center;padding:0.5rem 0.6rem;border-radius:14px;user-select:none;font-weight:800;letter-spacing:.04em;min-width:34px;max-width:48px;flex:0 1 auto;}
     .key-button.wide{min-width:62px;max-width:120px;}
     @media (max-width:520px){.key-button{min-width:30px;max-width:40px;padding:0.42rem 0.36rem;font-size:0.92rem}.key-button.wide{min-width:54px;max-width:84px}}
     .board{display:grid;grid-template-rows:repeat(6,1fr);gap:0.6rem;width:100%;max-width:420px;margin:0 auto;}
     .board-row{display:grid;grid-template-columns:repeat(5,1fr);gap:0.6rem;}
-    .cell{aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;font-size:1.75rem;font-weight:800;border-radius:12px;letter-spacing:0.06em;}
-    .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:white;border-radius:12px;padding:8px 14px;box-shadow:0 8px 24px rgba(16,24,40,.12);font-weight:600;z-index:60;}
+    .cell{aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;font-size:1.75rem;font-weight:900;border-radius:12px;letter-spacing:0.10em;}
+    .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:white;border-radius:12px;padding:8px 14px;box-shadow:0 8px 24px rgba(16,24,40,.12);font-weight:700;z-index:60;}
     header.sticky{position:sticky;top:0;backdrop-filter:blur(6px);z-index:40;background:rgba(248,247,244,.7);border-bottom:1px solid var(--border);}
     @media (max-width:420px){.cell{font-size:1.5rem}}
     .muted{opacity:.75}
     .chip{display:inline-block;background:var(--key);border:1px dashed var(--border);border-radius:9999px;padding:.18rem .6rem;font-weight:700;}
-    /* Ad modal */
     .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:80;}
   </style>
 </head>
@@ -52,100 +51,120 @@
   (function(){
     const { useState, useEffect, useRef } = React;
 
-    /* ============================================================
-     * Word repository (5-letter only) with Broad + Specific hints.
-     * (Your provided list, duplicates de-duped, 5-letter filtered)
-     * ============================================================ */
-    const REPO_RAW = [
-      ["blood","Body fluid","Red cells, white cells, platelets, and plasma combined"],
-      ["brain","Control center","Organ protected by the skull that processes thoughts"],
-      ["heart","Pump organ","Four-chambered muscle that circulates blood"],
-      ["liver","Detox organ","Largest internal organ that processes nutrients"],
-      ["spine","Back support","Vertebral column protecting spinal cord"],
-      ["nerve","Signal carrier","Fiber that transmits electrical impulses"],
-      ["fever","Heat response","Elevated body temperature above 100.4°F"],
-      ["chest","Torso area","Body cavity containing heart and lungs"],
-      ["pulse","Beat rhythm","Arterial pressure wave felt at wrist"],
-      ["virus","Infectious agent","Microscopic pathogen requiring host cells"],
-      ["tumor","Abnormal growth","Mass of cells dividing uncontrollably"],
-      ["organ","Body part","Tissue structure performing specific function"],
-      ["wound","Injury site","Break in skin or tissue integrity"],
-      ["toxic","Poisonous","Substance causing cellular damage"],
-      ["acute","Sudden onset","Condition developing rapidly and severely"],
-      ["joint","Connection point","Where two bones meet and articulate"],
-      ["gland","Secreting structure","Tissue producing hormones or enzymes"],
-      ["serum","Blood component","Liquid portion after clotting removed"],
-      ["drugs","Medicine category","Chemical substances affecting body function"],
-      ["sleep","Rest state","Naturally recurring unconscious condition"],
-      ["teeth","Mouth structures","Hard calcium structures for chewing"],
-      ["bones","Skeletal parts","Calcified connective tissue framework"],
-      ["lymph","Clear fluid","Colorless fluid in lymphatic system"],
-      ["shock","Emergency state","Inadequate tissue perfusion condition"],
-      ["sweat","Body cooling","Salty fluid from eccrine glands"],
-      ["colon","Large intestine","Final section of digestive tract"],
-      ["fiber","Thread-like structure","Indigestible plant material aiding digestion"],
-      ["latex","Rubber material","Natural polymer causing allergic reactions"],
-      ["depot","Storage area","Long-acting injection site"],
-      ["donor","Giver person","Individual providing organs or blood"],
-      ["flora","Bacterial community","Normal microorganisms in body"],
-      ["graft","Transplanted tissue","Tissue moved from one location"],
-      ["habit","Repeated behavior","Automatic behavioral pattern"],
-      ["lupus","Autoimmune disease","Systemic inflammatory connective tissue disorder"],
-      ["mania","Extreme mood","Elevated, expansive, or irritable mood"],
-      ["nasal","Nose-related","Pertaining to nasal cavity"],
-      ["optic","Eye-related","Concerning vision or eye nerves"],
-      ["panel","Test group","Series of laboratory tests"],
-      ["renal","Kidney-related","Pertaining to kidney function"],
-      ["scalp","Head covering","Skin covering the skull"],
-      ["sinus","Air cavity","Hollow space in facial bones"],
-      ["tonic","Strengthening agent","Medicine restoring normal function"],
-      ["ulcer","Open sore","Erosion in mucous membrane"],
-      ["valve","Flow controller","Structure preventing blood backflow"],
-      ["viral","Infection type","Caused by virus particles"],
-      ["aging","Time process","Progressive physiological decline"],
-      ["blind","Vision loss","Unable to see or perceive"],
-      ["clamp","Surgical tool","Device for controlling bleeding"],
-      ["edema","Swelling condition","Excess fluid in tissues"],
-      ["fatal","Deadly outcome","Resulting in death"],
-      ["gauge","Measurement tool","Instrument for needle size"],
-      ["knife","Cutting tool","Surgical blade instrument"],
-      ["labor","Work process","Childbirth contractions phase"],
-      ["molar","Back tooth","Grinding tooth in jaw"],
-      ["nurse","Care provider","Licensed healthcare professional"],
-      ["onset","Beginning time","Initial appearance of symptoms"],
-      ["panic","Extreme fear","Sudden overwhelming anxiety attack"],
-      ["rapid","Speed description","Fast heart rate condition"],
-      ["scale","Measuring device","Weight measurement instrument"],
-      ["vital","Life signs","Essential for survival"],
-      ["waste","Disposal material","Body's unwanted byproducts"],
-      ["brace","Support device","Orthopedic stabilizing apparatus"],
-      ["chill","Cold sensation","Shivering response to fever"],
-      ["drain","Fluid removal","Tube for wound discharge"],
-      ["gouge","Deep cut","Excavated wound or injury"],
-      ["index","Reference measure","Ratio for health assessment"],
-      ["patch","Covering piece","Transdermal medication delivery"],
-      ["range","Normal limits","Reference values for tests"],
-      ["scope","Viewing instrument","Endoscopic examination tool"],
-      ["treat","Medical care","Therapeutic intervention"],
-      ["unite","Join together","Bone healing process"],
-      ["vomit","Stomach expulsion","Forceful gastric contents ejection"],
-      ["yield","Production amount","Laboratory test result quantity"]
-    ].map(([w,broad,specific]) => ({ w:w.toLowerCase(), broad, specific }));
+    /* ===== Repository (answers) — 5-letter medical words with hints (UPPERCASE) ===== */
+    const REPO = [
+      ["BLOOD","Body fluid","Red cells, white cells, platelets, and plasma combined"],
+      ["BRAIN","Control center","Organ protected by the skull that processes thoughts"],
+      ["HEART","Pump organ","Four-chambered muscle that circulates blood"],
+      ["LIVER","Detox organ","Largest internal organ that processes nutrients"],
+      ["SPINE","Back support","Vertebral column protecting spinal cord"],
+      ["NERVE","Signal carrier","Fiber that transmits electrical impulses"],
+      ["FEVER","Heat response","Elevated body temperature above 100.4°F"],
+      ["CHEST","Torso area","Body cavity containing heart and lungs"],
+      ["PULSE","Beat rhythm","Arterial pressure wave felt at wrist"],
+      ["VIRUS","Infectious agent","Microscopic pathogen requiring host cells"],
+      ["TUMOR","Abnormal growth","Mass of cells dividing uncontrollably"],
+      ["ORGAN","Body part","Tissue structure performing specific function"],
+      ["WOUND","Injury site","Break in skin or tissue integrity"],
+      ["TOXIC","Poisonous","Substance causing cellular damage"],
+      ["ACUTE","Sudden onset","Condition developing rapidly and severely"],
+      ["JOINT","Connection point","Where two bones meet and articulate"],
+      ["GLAND","Secreting structure","Tissue producing hormones or enzymes"],
+      ["SERUM","Blood component","Liquid portion after clotting removed"],
+      ["DRUGS","Medicine category","Chemical substances affecting body function"],
+      ["SLEEP","Rest state","Naturally recurring unconscious condition"],
+      ["TEETH","Mouth structures","Hard calcium structures for chewing"],
+      ["BONES","Skeletal parts","Calcified connective tissue framework"],
+      ["LYMPH","Clear fluid","Colorless fluid in lymphatic system"],
+      ["SHOCK","Emergency state","Inadequate tissue perfusion condition"],
+      ["SWEAT","Body cooling","Salty fluid from eccrine glands"],
+      ["COLON","Large intestine","Final section of digestive tract"],
+      ["FIBER","Thread-like structure","Indigestible plant material aiding digestion"],
+      ["LATEX","Rubber material","Natural polymer causing allergic reactions"],
+      ["DEPOT","Storage area","Long-acting injection site"],
+      ["DONOR","Giver person","Individual providing organs or blood"],
+      ["FLORA","Bacterial community","Normal microorganisms in body"],
+      ["GRAFT","Transplanted tissue","Tissue moved from one location"],
+      ["HABIT","Repeated behavior","Automatic behavioral pattern"],
+      ["LUPUS","Autoimmune disease","Systemic inflammatory connective tissue disorder"],
+      ["MANIA","Extreme mood","Elevated, expansive, or irritable mood"],
+      ["NASAL","Nose-related","Pertaining to nasal cavity"],
+      ["OPTIC","Eye-related","Concerning vision or eye nerves"],
+      ["PANEL","Test group","Series of laboratory tests"],
+      ["RENAL","Kidney-related","Pertaining to kidney function"],
+      ["SCALP","Head covering","Skin covering the skull"],
+      ["SINUS","Air cavity","Hollow space in facial bones"],
+      ["TONIC","Strengthening agent","Medicine restoring normal function"],
+      ["ULCER","Open sore","Erosion in mucous membrane"],
+      ["VALVE","Flow controller","Structure preventing blood backflow"],
+      ["VIRAL","Infection type","Caused by virus particles"],
+      ["AGING","Time process","Progressive physiological decline"],
+      ["BLIND","Vision loss","Unable to see or perceive"],
+      ["CLAMP","Surgical tool","Device for controlling bleeding"],
+      ["EDEMA","Swelling condition","Excess fluid in tissues"],
+      ["FATAL","Deadly outcome","Resulting in death"],
+      ["GAUGE","Measurement tool","Instrument for needle size"],
+      ["KNIFE","Cutting tool","Surgical blade instrument"],
+      ["LABOR","Work process","Childbirth contractions phase"],
+      ["MOLAR","Back tooth","Grinding tooth in jaw"],
+      ["NURSE","Care provider","Licensed healthcare professional"],
+      ["ONSET","Beginning time","Initial appearance of symptoms"],
+      ["PANIC","Extreme fear","Sudden overwhelming anxiety attack"],
+      ["RAPID","Speed description","Fast heart rate condition"],
+      ["SCALE","Measuring device","Weight measurement instrument"],
+      ["VITAL","Life signs","Essential for survival"],
+      ["WASTE","Disposal material","Body's unwanted byproducts"],
+      ["BRACE","Support device","Orthopedic stabilizing apparatus"],
+      ["CHILL","Cold sensation","Shivering response to fever"],
+      ["DRAIN","Fluid removal","Tube for wound discharge"],
+      ["GOUGE","Deep cut","Excavated wound or injury"],
+      ["INDEX","Reference measure","Ratio for health assessment"],
+      ["PATCH","Covering piece","Transdermal medication delivery"],
+      ["RANGE","Normal limits","Reference values for tests"],
+      ["SCOPE","Viewing instrument","Endoscopic examination tool"],
+      ["TREAT","Medical care","Therapeutic intervention"],
+      ["UNITE","Join together","Bone healing process"],
+      ["VOMIT","Stomach expulsion","Forceful gastric contents ejection"],
+      ["YIELD","Production amount","Laboratory test result quantity"]
+    ];
 
-    const WORDS = Array.from(
-      new Map(REPO_RAW.filter(e => e.w.length === 5).map(e => [e.w, e])).values()
-    );
+    const TARGETS = REPO.map(([w,b,s]) => ({ w, broad:b, specific:s }));
+    const TARGET_SET = new Set(TARGETS.map(e => e.w)); // for instant membership checks
+
+    /* ===== Allowed guesses: dynamic via dictionary API + our target set =====
+       We cache results in localStorage under 'dict:WORD' = '1' (valid) | '0' (invalid) */
+    async function isEnglishWord(wordUpper){
+      if (TARGET_SET.has(wordUpper)) return true; // always allow our curated targets
+
+      const key = 'dict:'+wordUpper;
+      try {
+        const cached = localStorage.getItem(key);
+        if (cached === '1') return true;
+        if (cached === '0') return false;
+      } catch (_) {}
+
+      // Query free dictionary API (lowercase path)
+      try {
+        const res = await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/'+wordUpper.toLowerCase(), { method:'GET' });
+        const ok = res.ok;
+        try { localStorage.setItem(key, ok ? '1' : '0'); } catch(_) {}
+        return ok;
+      } catch (e) {
+        // Network failed: be strict to avoid "random" nonsense
+        return false;
+      }
+    }
 
     /* ===== Helpers ===== */
     const KEY_ROWS = [
-      ["q","w","e","r","t","y","u","i","o","p"],
-      ["a","s","d","f","g","h","j","k","l"],
-      ["enter","z","x","c","v","b","n","m","back"]
+      ["Q","W","E","R","T","Y","U","I","O","P"],
+      ["A","S","D","F","G","H","J","K","L"],
+      ["ENTER","Z","X","C","V","B","N","M","BACK"]
     ];
-    function norm5(s){ return String(s||"").normalize("NFKC").toLowerCase().replace(/[^a-z]/g,"").slice(0,5); }
+    function toUpperAlpha(s){ return String(s||"").normalize("NFKC").toUpperCase().replace(/[^A-Z]/g,"").slice(0,5); }
     function getCSS(key){ return getComputedStyle(document.documentElement).getPropertyValue(key).trim(); }
 
-    // True Wordle-like scoring (handles duplicate letters correctly)
+    // True Wordle-like scoring (handles duplicates). Expects UPPERCASE.
     function scoreGuess(guess, answer){
       const res = Array(5).fill("wrong");
       const counts = {};
@@ -161,15 +180,15 @@
       return res;
     }
 
-    function pickEntry(){ return WORDS[Math.floor(Math.random()*WORDS.length)]; }
+    function pickEntry(){ return TARGETS[Math.floor(Math.random()*TARGETS.length)]; }
 
-    /* ===== Header & Home ===== */
+    /* ===== UI shell ===== */
     function Header(){
       return (
         React.createElement('header', { className:'sticky top-0 z-30' },
           React.createElement('div', { className:'max-w-[960px] mx-auto px-4 py-3 flex items-center justify-between' },
             React.createElement('div', { className:'flex items-center gap-2' },
-              React.createElement('h1', { className:'text-2xl font-extrabold tracking-tight' }, 'Juggle',
+              React.createElement('h1', { className:'text-2xl font-extrabold tracking-tight' }, 'JUGGLE',
                 React.createElement('span', { className:'ml-2 text-sm font-medium muted' }, 'medical wordle')
               )
             )
@@ -182,17 +201,17 @@
       return (
         React.createElement('div', { className:'min-h-[60vh] w-full flex items-center justify-center px-4' },
           React.createElement('div', { className:'text-center max-w-xl' },
-            React.createElement('h2', { className:'text-3xl sm:text-4xl font-extrabold mb-2' }, 'Welcome to Juggle'),
-            React.createElement('p', { className:'muted mb-6' }, 'Guess the 5-letter medical word in 6 tries. Use hints if you need—ads support the game.'),
-            React.createElement('button', { onClick:onPlay, className:'px-5 py-3 rounded-2xl key font-bold hover:opacity-90 shadow-soft' }, 'Play now'),
+            React.createElement('h2', { className:'text-3xl sm:text-4xl font-extrabold mb-2' }, 'Welcome to JUGGLE'),
+            React.createElement('p', { className:'muted mb-6' }, 'All caps. Real words only. 6 tries to guess the 5-letter medical word.'),
+            React.createElement('button', { onClick:onPlay, className:'px-5 py-3 rounded-2xl key font-bold hover:opacity-90 shadow-soft' }, 'PLAY NOW'),
             React.createElement('details', { className:'mt-5 key rounded-2xl p-4 text-sm text-left shadow-soft' },
               React.createElement('summary', { className:'cursor-pointer font-bold' }, 'How to play'),
               React.createElement('div', { className:'mt-2' },
-                'Type a 5-letter word and press Enter. Tile colors: ',
-                React.createElement('b', null, 'green'),' = correct, ',
-                React.createElement('b', null, 'yellow'),' = present, ',
-                React.createElement('b', null, 'red'),' = wrong. ',
-                'Tap the light bulb to open hints: 1) starting letter, 2) second letter, 3) a one-line description. Each hint shows an ad.'
+                'Type your guess and press ENTER. Tiles: ',
+                React.createElement('b', null, 'GREEN'),' correct, ',
+                React.createElement('b', null, 'YELLOW'),' present, ',
+                React.createElement('b', null, 'RED'),' wrong. ',
+                'Use the 💡 button for hints (letters & one-line description) — ad-gated.'
               )
             )
           )
@@ -200,9 +219,9 @@
       );
     }
 
-    /* ===== Game ===== */
+    /* ===== Game with ALL CAPS + Dictionary Validation ===== */
     function Game({ onExit }){
-      const [answer,setAnswer]=useState("");
+      const [answer,setAnswer]=useState("BRAIN");
       const [broad,setBroad]=useState("");
       const [specific,setSpecific]=useState("");
       const [rows,setRows]=useState(Array(6).fill(""));
@@ -212,7 +231,7 @@
       const [over,setOver]=useState(false);
       const [toast,setToast]=useState(null);
 
-      // Hints
+      // Hint UI (ad-gated)
       const [showHints,setShowHints]=useState(false);
       const [hintFirst,setHintFirst]=useState(false);
       const [hintSecond,setHintSecond]=useState(false);
@@ -225,6 +244,7 @@
       const adTimerRef = useRef(null);
 
       const inputRef = useRef(null);
+      const [checkingWord,setCheckingWord]=useState(false);
 
       useEffect(()=>{ start(); return cleanupAd; },[]);
       function start(){
@@ -240,7 +260,6 @@
         if(adTimerRef.current){ clearInterval(adTimerRef.current); adTimerRef.current=null; }
         setAdOpen(false); setAdSeconds(5); adCallbackRef.current=null;
       }
-
       function showAd(next){
         cleanupAd();
         adCallbackRef.current = next;
@@ -249,15 +268,10 @@
         setAdSeconds(s);
         adTimerRef.current = setInterval(()=>{
           s-=1; setAdSeconds(s);
-          if(s<=0){
-            clearInterval(adTimerRef.current);
-            adTimerRef.current=null;
-          }
+          if(s<=0){ clearInterval(adTimerRef.current); adTimerRef.current=null; }
         },1000);
       }
-
       function finishAd(){
-        // Only allow closing after countdown finishes
         if(adSeconds>0) return;
         setAdOpen(false);
         if(typeof adCallbackRef.current === 'function'){ adCallbackRef.current(); }
@@ -266,24 +280,24 @@
 
       function ping(msg){ setToast(msg); setTimeout(()=> setToast(null), 1200); }
 
-      // Keyboard
+      // Physical keyboard -> ALWAYS UPPERCASE
       useEffect(()=>{
         function onKey(e){
           if(over) return;
-          const k=e.key.toLowerCase();
-          if(k==='enter') return handleEnter();
-          if(k==='backspace') return handleBack();
-          if(/^[a-z]$/.test(k)) return handleChar(k);
+          const k = e.key;
+          if(k === 'Enter') return handleEnter();
+          if(k === 'Backspace') return handleBack();
+          if(/^[a-zA-Z]$/.test(k)) return handleChar(k.toUpperCase());
         }
         window.addEventListener('keydown',onKey);
         return ()=> window.removeEventListener('keydown',onKey);
       },[typed,row,over,answer]);
 
-      function handleChar(ch){
+      function handleChar(chUpper){
         if(over||row>=6) return;
         for(let i=0;i<5;i++){
           if(!typed[i]){
-            const next=typed.slice(); next[i]=ch; setTyped(next); return;
+            const next=typed.slice(); next[i]=chUpper; setTyped(next); return;
           }
         }
       }
@@ -295,10 +309,16 @@
           }
         }
       }
-      function handleEnter(){
+      async function handleEnter(){
         if(over) return;
-        const guess = norm5(typed.join(""));
-        if(guess.length!==5){ ping("Enter a 5-letter word"); return; }
+        const guess = toUpperAlpha(typed.join(""));
+        if(guess.length!==5){ ping("ENTER A 5-LETTER WORD"); return; }
+
+        // Validate English word before scoring
+        setCheckingWord(true);
+        const ok = await isEnglishWord(guess);
+        setCheckingWord(false);
+        if(!ok){ ping("NOT IN WORD LIST"); return; }
 
         const sc = scoreGuess(guess, answer);
         const ns = states.slice(); ns[row]=sc; setStates(ns);
@@ -309,11 +329,11 @@
         else { setRow(row+1); setTyped(Array(5).fill("")); }
       }
 
-      function keyColor(k){
+      function keyColor(kUpper){
         let state="";
         for(let r=0;r<row;r++){
           for(let c=0;c<5;c++){
-            if((rows[r]||"")[c]===k){
+            if((rows[r]||"")[c]===kUpper){
               const st=(states[r]||[])[c];
               if(st==="correct") return getCSS('--correct');
               if(st==="present") state="present";
@@ -336,10 +356,10 @@
 
           /* Top line */
           React.createElement('div', { className:'flex items-center justify-between py-3 text-sm muted' },
-            React.createElement('div', null, 'Good luck!'),
+            React.createElement('div', null, checkingWord ? 'CHECKING WORD…' : 'GOOD LUCK!'),
             React.createElement('div', null,
-              React.createElement('button', { onClick:start, className:'px-3 py-2 rounded-2xl key font-semibold hover:opacity-90 shadow-soft mr-2' }, 'New Game'),
-              React.createElement('button', { onClick:onExit, className:'px-3 py-2 rounded-2xl key font-semibold hover:opacity-90' }, 'Home')
+              React.createElement('button', { onClick:start, className:'px-3 py-2 rounded-2xl key font-semibold hover:opacity-90 shadow-soft mr-2' }, 'NEW GAME'),
+              React.createElement('button', { onClick:onExit, className:'px-3 py-2 rounded-2xl key font-semibold hover:opacity-90' }, 'HOME')
             )
           ),
 
@@ -353,72 +373,76 @@
               React.createElement('svg', { width:18, height:18, viewBox:"0 0 24 24", fill:"none", xmlns:"http://www.w3.org/2000/svg", 'aria-hidden':true },
                 React.createElement('path', { d:"M9 21h6m-8-3h10M12 3a7 7 0 00-4 12c.6.6 1 1.5 1 2.5V18h6v-.5c0-1 .4-1.9 1-2.5A7 7 0 0012 3z", stroke:"currentColor", 'stroke-width':1.6, 'stroke-linecap':'round', 'stroke-linejoin':'round' })
               ),
-              showHints ? 'Hide hints' : 'Show hints'
+              showHints ? 'HIDE HINTS' : 'SHOW HINTS'
             )
           ),
 
-          /* Hints panel (letters are never auto-filled on board) */
+          /* Hints panel (letters are NOT auto-filled on the grid) */
           showHints && React.createElement('div', { className:'key rounded-2xl p-3 shadow-soft mb-2 text-sm' },
             React.createElement('div', { className:'space-y-2' },
 
               React.createElement('div', { className:'flex items-center justify-between' },
                 React.createElement('div', null,
-                  React.createElement('span', { className:'chip mr-2' }, 'Hint 1'),
+                  React.createElement('span', { className:'chip mr-2' }, 'HINT 1'),
                   React.createElement('span', { className:'opacity-85' },
-                    hintFirst ? `Starting letter: ${answer[0].toUpperCase()}` : 'Reveal starting letter'
+                    hintFirst ? `STARTING LETTER: ${answer[0]}` : 'REVEAL STARTING LETTER'
                   )
                 ),
                 React.createElement('button', {
                   className:'px-3 py-1 rounded-2xl key font-semibold hover:opacity-90 shadow-soft',
                   onClick: unlockFirst,
                   disabled: hintFirst
-                }, hintFirst ? 'Unlocked' : 'Watch Ad')
+                }, hintFirst ? 'UNLOCKED' : 'WATCH AD')
               ),
 
               React.createElement('div', { className:'flex items-center justify-between' },
                 React.createElement('div', null,
-                  React.createElement('span', { className:'chip mr-2' }, 'Hint 2'),
+                  React.createElement('span', { className:'chip mr-2' }, 'HINT 2'),
                   React.createElement('span', { className:'opacity-85' },
-                    hintSecond ? `Second letter: ${answer[1].toUpperCase()}` : 'Reveal second letter'
+                    hintSecond ? `SECOND LETTER: ${answer[1]}` : 'REVEAL SECOND LETTER'
                   )
                 ),
                 React.createElement('button', {
                   className:'px-3 py-1 rounded-2xl key font-semibold hover:opacity-90 shadow-soft',
                   onClick: unlockSecond,
                   disabled: hintSecond
-                }, hintSecond ? 'Unlocked' : 'Watch Ad')
+                }, hintSecond ? 'UNLOCKED' : 'WATCH AD')
               ),
 
               React.createElement('div', { className:'flex items-center justify-between' },
                 React.createElement('div', null,
-                  React.createElement('span', { className:'chip mr-2' }, 'Hint 3'),
+                  React.createElement('span', { className:'chip mr-2' }, 'HINT 3'),
                   React.createElement('span', { className:'opacity-90' },
-                    hintDesc ? specific : 'Reveal one-line description'
+                    hintDesc ? specific : 'REVEAL ONE-LINER'
                   )
                 ),
                 React.createElement('button', {
                   className:'px-3 py-1 rounded-2xl key font-semibold hover:opacity-90 shadow-soft',
                   onClick: unlockDesc,
                   disabled: hintDesc
-                }, hintDesc ? 'Unlocked' : 'Watch Ad')
+                }, hintDesc ? 'UNLOCKED' : 'WATCH AD')
               )
+            ),
+            React.createElement('div', { className:'mt-2' },
+              React.createElement('span', { className:'chip mr-2' }, 'BROAD HINT'),
+              React.createElement('span', { className:'opacity-90' }, broad)
             )
           ),
 
           /* Hidden input to summon mobile keyboard when board tapped */
           React.createElement('input', {
             ref: inputRef, className:'absolute opacity-0 pointer-events-none',
-            autoCapitalize:'none', autoComplete:'off', autoCorrect:'off'
+            autoCapitalize:'characters', autoComplete:'off', autoCorrect:'off'
           }),
 
-          /* Board */
+          /* Board (ALL CAPS) */
           React.createElement('div', { className:'board my-4', onClick:()=> inputRef.current && inputRef.current.focus() },
             Array.from({length:6}).map((_, r) =>
               React.createElement('div', { key:r, className:'board-row' },
                 Array.from({length:5}).map((_, c) => {
                   let ch='', st='empty';
                   if(r < row || (r===row && rows[r])){ ch = (rows[r]||'')[c] || ''; st = (states[r]||[])[c] || 'empty'; }
-                  else if(r===row){ ch = (typed[c]||'').toUpperCase(); }
+                  else if(r===row){ ch = (typed[c]||''); }
                   return React.createElement('div', { key:c, className:`tile cell ${st!=='empty'?st:''}` }, ch);
                 })
               )
@@ -429,26 +453,31 @@
           over && React.createElement('div', { className:'key rounded-2xl p-4 text-center mb-3 shadow-soft' },
             (rows[row]===answer)
               ? React.createElement('div', null,
-                  React.createElement('div', { className:'text-lg font-extrabold' }, 'Nice one! 🎉'),
+                  React.createElement('div', { className:'text-lg font-extrabold' }, 'NICE ONE! 🎉'),
                   React.createElement('div', { className:'muted mt-1' }, 'You nailed it. Up for another?')
                 )
               : React.createElement('div', null,
-                  React.createElement('div', { className:'text-lg font-extrabold' }, 'Not this time.'),
+                  React.createElement('div', { className:'text-lg font-extrabold' }, 'NOT THIS TIME.'),
                   React.createElement('div', { className:'muted mt-1' }, 'Take another shot — life is all about second chances.')
                 )
           ),
 
-          /* On-screen keyboard */
+          /* On-screen keyboard (ALL CAPS) */
           React.createElement('div', { className:'keyboard' },
             KEY_ROWS.map((rowKeys, i) =>
               React.createElement('div', { key:i, className:'keyboard-row' },
                 rowKeys.map(k =>
                   React.createElement('button', {
-                    key:k, onClick: ()=> { if(k==='enter') handleEnter(); else if(k==='back') handleBack(); else handleChar(k); },
+                    key:k,
+                    onClick: ()=> {
+                      if(k==='ENTER') handleEnter();
+                      else if(k==='BACK') handleBack();
+                      else handleChar(k); // k is already uppercase
+                    },
                     disabled: over,
-                    className: 'key-button ' + (k.length>1 ? 'wide' : '') + ' rounded-2xl font-semibold key',
+                    className: 'key-button ' + ((k==='ENTER'||k==='BACK') ? 'wide' : '') + ' rounded-2xl font-semibold key',
                     style:{ background:keyColor(k), border:`1px solid var(--border)`, opacity: over?0.6:1 }
-                  }, k==='back'?'⌫':k)
+                  }, k==='BACK'?'⌫':k)
                 )
               )
             )
@@ -456,10 +485,10 @@
 
           toast ? React.createElement('div', { className:'toast' }, toast) : null,
 
-          /* ---- Simulated Ad Modal (replace with real SDK later) ---- */
+          /* Simulated Ad Modal (replace with real rewarded ads SDK later) */
           adOpen && React.createElement('div', { className:'modal-backdrop' },
             React.createElement('div', { className:'bg-white rounded-2xl p-5 w-[min(92vw,420px)] shadow-soft text-center' },
-              React.createElement('div', { className:'text-lg font-extrabold mb-1' }, 'Ad break'),
+              React.createElement('div', { className:'text-lg font-extrabold mb-1' }, 'AD BREAK'),
               React.createElement('div', { className:'muted mb-3' }, 'Thanks! This keeps Juggle free.'),
               React.createElement('div', { className:'key rounded-xl p-3 mb-4' }, `Ad ends in ${Math.max(0, adSeconds)}s`),
               React.createElement('button', {
@@ -467,14 +496,14 @@
                 onClick: finishAd,
                 disabled: adSeconds>0,
                 style:{ opacity: adSeconds>0 ? .6 : 1 }
-              }, adSeconds>0 ? 'Please wait…' : 'Continue')
+              }, adSeconds>0 ? 'PLEASE WAIT…' : 'CONTINUE')
             )
           )
         )
       );
     }
 
-    /* ===== App shell ===== */
+    /* ===== App ===== */
     function App(){
       const [view,setView]=useState('HOME');
       return (
