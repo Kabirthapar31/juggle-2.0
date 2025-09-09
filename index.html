@@ -41,6 +41,8 @@
     @media (max-width:420px){.cell{font-size:1.5rem}}
     .muted{opacity:.75}
     .chip{display:inline-block;background:var(--key);border:1px dashed var(--border);border-radius:9999px;padding:.18rem .6rem;font-weight:700;}
+    /* Ad modal */
+    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:80;}
   </style>
 </head>
 <body>
@@ -51,8 +53,8 @@
     const { useState, useEffect, useRef } = React;
 
     /* ============================================================
-     * Your repository (broad + specific). Duplicates auto-removed.
-     * Two 6-letter entries (ASTHMA, PEPTIC) are skipped for now.
+     * Word repository (5-letter only) with Broad + Specific hints.
+     * (Your provided list, duplicates de-duped, 5-letter filtered)
      * ============================================================ */
     const REPO_RAW = [
       ["blood","Body fluid","Red cells, white cells, platelets, and plasma combined"],
@@ -82,7 +84,6 @@
       ["sweat","Body cooling","Salty fluid from eccrine glands"],
       ["colon","Large intestine","Final section of digestive tract"],
       ["fiber","Thread-like structure","Indigestible plant material aiding digestion"],
-      /* asthma -> 6 letters (skipped) */
       ["latex","Rubber material","Natural polymer causing allergic reactions"],
       ["depot","Storage area","Long-acting injection site"],
       ["donor","Giver person","Individual providing organs or blood"],
@@ -94,7 +95,6 @@
       ["nasal","Nose-related","Pertaining to nasal cavity"],
       ["optic","Eye-related","Concerning vision or eye nerves"],
       ["panel","Test group","Series of laboratory tests"],
-      /* peptic -> 6 letters (skipped) */
       ["renal","Kidney-related","Pertaining to kidney function"],
       ["scalp","Head covering","Skin covering the skull"],
       ["sinus","Air cavity","Hollow space in facial bones"],
@@ -132,34 +132,39 @@
       ["yield","Production amount","Laboratory test result quantity"]
     ].map(([w,broad,specific]) => ({ w:w.toLowerCase(), broad, specific }));
 
-    /* de-dup + keep only 5-letter words */
     const WORDS = Array.from(
       new Map(REPO_RAW.filter(e => e.w.length === 5).map(e => [e.w, e])).values()
     );
 
-    /* ===== Helpers / gameplay ===== */
+    /* ===== Helpers ===== */
     const KEY_ROWS = [
       ["q","w","e","r","t","y","u","i","o","p"],
       ["a","s","d","f","g","h","j","k","l"],
       ["enter","z","x","c","v","b","n","m","back"]
     ];
     function norm5(s){ return String(s||"").normalize("NFKC").toLowerCase().replace(/[^a-z]/g,"").slice(0,5); }
+    function getCSS(key){ return getComputedStyle(document.documentElement).getPropertyValue(key).trim(); }
+
+    // True Wordle-like scoring (handles duplicate letters correctly)
     function scoreGuess(guess, answer){
-      const res = Array(5).fill("wrong"), used = Array(5).fill(false);
-      for(let i=0;i<5;i++){ if(guess[i]===answer[i]){ res[i]="correct"; used[i]=true; } }
-      for(let i=0;i<5;i++){
+      const res = Array(5).fill("wrong");
+      const counts = {};
+      for (let i=0;i<5;i++){ counts[answer[i]] = (counts[answer[i]]||0)+1; }
+      for (let i=0;i<5;i++){
+        if(guess[i]===answer[i]){ res[i]="correct"; counts[guess[i]]--; }
+      }
+      for (let i=0;i<5;i++){
         if(res[i]==="correct") continue;
-        for(let j=0;j<5;j++){
-          if(!used[j] && guess[i]===answer[j]){ res[i]="present"; used[j]=true; break; }
-        }
+        const g = guess[i];
+        if(counts[g] > 0){ res[i]="present"; counts[g]--; }
       }
       return res;
     }
-    function pickEntry(){ return WORDS[Math.floor(Math.random()*WORDS.length)]; }
-    function getCSS(key){ return getComputedStyle(document.documentElement).getPropertyValue(key).trim(); }
 
-    /* ===== Header & Home (old UI) ===== */
-    function Header({mode,setMode}){
+    function pickEntry(){ return WORDS[Math.floor(Math.random()*WORDS.length)]; }
+
+    /* ===== Header & Home ===== */
+    function Header(){
       return (
         React.createElement('header', { className:'sticky top-0 z-30' },
           React.createElement('div', { className:'max-w-[960px] mx-auto px-4 py-3 flex items-center justify-between' },
@@ -167,11 +172,6 @@
               React.createElement('h1', { className:'text-2xl font-extrabold tracking-tight' }, 'Juggle',
                 React.createElement('span', { className:'ml-2 text-sm font-medium muted' }, 'medical wordle')
               )
-            ),
-            React.createElement('div', { className:'flex items-center gap-2 text-sm' },
-              React.createElement('span', { className:'muted' }, 'Mode:'),
-              React.createElement('button', { onClick: ()=> setMode('easy'), className:`px-3 py-2 rounded-2xl key font-semibold ${mode==='easy'?'ring-1':''}` }, 'Easy'),
-              React.createElement('button', { onClick: ()=> setMode('diff'), className:`px-3 py-2 rounded-2xl key font-semibold ${mode==='diff'?'ring-1':''}` }, 'Diff')
             )
           )
         )
@@ -183,20 +183,16 @@
         React.createElement('div', { className:'min-h-[60vh] w-full flex items-center justify-center px-4' },
           React.createElement('div', { className:'text-center max-w-xl' },
             React.createElement('h2', { className:'text-3xl sm:text-4xl font-extrabold mb-2' }, 'Welcome to Juggle'),
-            React.createElement('p', { className:'muted mb-6' }, 'Guess the 5-letter medical word in 6 tries.'),
+            React.createElement('p', { className:'muted mb-6' }, 'Guess the 5-letter medical word in 6 tries. Use hints if you need—ads support the game.'),
             React.createElement('button', { onClick:onPlay, className:'px-5 py-3 rounded-2xl key font-bold hover:opacity-90 shadow-soft' }, 'Play now'),
             React.createElement('details', { className:'mt-5 key rounded-2xl p-4 text-sm text-left shadow-soft' },
               React.createElement('summary', { className:'cursor-pointer font-bold' }, 'How to play'),
               React.createElement('div', { className:'mt-2' },
                 'Type a 5-letter word and press Enter. Tile colors: ',
-                React.createElement('b', null, 'green'),
-                ' = correct, ',
-                React.createElement('b', null, 'yellow'),
-                ' = present, ',
-                React.createElement('b', null, 'red'),
-                ' = wrong. ',
-                'In Easy mode, fixed letters are revealed each row (1 → 2 → 3). ',
-                'A broad hint is available; a specific one appears after 3 guesses.'
+                React.createElement('b', null, 'green'),' = correct, ',
+                React.createElement('b', null, 'yellow'),' = present, ',
+                React.createElement('b', null, 'red'),' = wrong. ',
+                'Tap the light bulb to open hints: 1) starting letter, 2) second letter, 3) a one-line description. Each hint shows an ad.'
               )
             )
           )
@@ -204,94 +200,109 @@
       );
     }
 
-    /* ===== Game (old UI, no lock icon; uses your hints) ===== */
-    function Game({ mode, onExit }){
+    /* ===== Game ===== */
+    function Game({ onExit }){
       const [answer,setAnswer]=useState("");
       const [broad,setBroad]=useState("");
       const [specific,setSpecific]=useState("");
-      const [revealIdx,setRevealIdx]=useState([]); // 3 positions
       const [rows,setRows]=useState(Array(6).fill(""));
       const [states,setStates]=useState(Array(6).fill(Array(5).fill("empty")));
       const [typed,setTyped]=useState(Array(5).fill(""));
       const [row,setRow]=useState(0);
       const [over,setOver]=useState(false);
       const [toast,setToast]=useState(null);
-      const [showHints,setShowHints]=useState(false); // light-bulb toggle (optional)
+
+      // Hints
+      const [showHints,setShowHints]=useState(false);
+      const [hintFirst,setHintFirst]=useState(false);
+      const [hintSecond,setHintSecond]=useState(false);
+      const [hintDesc,setHintDesc]=useState(false);
+
+      // Ad modal
+      const [adOpen,setAdOpen]=useState(false);
+      const [adSeconds,setAdSeconds]=useState(5);
+      const adCallbackRef = useRef(null);
+      const adTimerRef = useRef(null);
+
       const inputRef = useRef(null);
 
-      useEffect(()=>{ start(); },[mode]);
+      useEffect(()=>{ start(); return cleanupAd; },[]);
       function start(){
         const e = pickEntry();
         setAnswer(e.w); setBroad(e.broad); setSpecific(e.specific);
-        setRevealIdx(mode==='easy'? pickThreeIndices() : []);
         setRows(Array(6).fill("")); setStates(Array(6).fill(Array(5).fill("empty")));
-        setTyped(Array(5).fill("")); setRow(0); setOver(false); setShowHints(false);
+        setTyped(Array(5).fill("")); setRow(0); setOver(false);
+        setShowHints(false); setHintFirst(false); setHintSecond(false); setHintDesc(false);
+        cleanupAd();
       }
 
-      function pickThreeIndices(){
-        const idx=[0,1,2,3,4];
-        for(let i=idx.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [idx[i],idx[j]]=[idx[j],idx[i]]; }
-        return idx.slice(0,3).sort();
+      function cleanupAd(){
+        if(adTimerRef.current){ clearInterval(adTimerRef.current); adTimerRef.current=null; }
+        setAdOpen(false); setAdSeconds(5); adCallbackRef.current=null;
       }
 
+      function showAd(next){
+        cleanupAd();
+        adCallbackRef.current = next;
+        setAdOpen(true);
+        let s=5;
+        setAdSeconds(s);
+        adTimerRef.current = setInterval(()=>{
+          s-=1; setAdSeconds(s);
+          if(s<=0){
+            clearInterval(adTimerRef.current);
+            adTimerRef.current=null;
+          }
+        },1000);
+      }
+
+      function finishAd(){
+        // Only allow closing after countdown finishes
+        if(adSeconds>0) return;
+        setAdOpen(false);
+        if(typeof adCallbackRef.current === 'function'){ adCallbackRef.current(); }
+        adCallbackRef.current=null;
+      }
+
+      function ping(msg){ setToast(msg); setTimeout(()=> setToast(null), 1200); }
+
+      // Keyboard
       useEffect(()=>{
         function onKey(e){
+          if(over) return;
           const k=e.key.toLowerCase();
           if(k==='enter') return handleEnter();
           if(k==='backspace') return handleBack();
           if(/^[a-z]$/.test(k)) return handleChar(k);
         }
-        if(!over) window.addEventListener('keydown',onKey);
+        window.addEventListener('keydown',onKey);
         return ()=> window.removeEventListener('keydown',onKey);
-      },[typed,row,over,answer,mode]);
-
-      function ping(msg){ setToast(msg); setTimeout(()=> setToast(null), 1200); }
-
-      function revealedCountForRow(r){
-        if(mode!=='easy') return 0;
-        if(r===0) return 1; if(r===1) return 2; return 3;
-      }
-      function revealedSetForRow(r){
-        const n=revealedCountForRow(r);
-        return new Set(revealIdx.slice(0,n));
-      }
-
-      function currentRowString(){
-        const pref=revealedSetForRow(row);
-        const arr=Array(5).fill("");
-        for(let i=0;i<5;i++){
-          if(pref.has(i)) arr[i]=answer[i];  // prefilled (no lock icon)
-          else arr[i]=typed[i]||"";
-        }
-        return arr.join("");
-      }
+      },[typed,row,over,answer]);
 
       function handleChar(ch){
         if(over||row>=6) return;
-        const pref=revealedSetForRow(row);
         for(let i=0;i<5;i++){
-          if(!pref.has(i) && !typed[i]){
+          if(!typed[i]){
             const next=typed.slice(); next[i]=ch; setTyped(next); return;
           }
         }
       }
       function handleBack(){
         if(over) return;
-        const pref=revealedSetForRow(row);
         for(let i=4;i>=0;i--){
-          if(!pref.has(i) && typed[i]){
+          if(typed[i]){
             const next=typed.slice(); next[i]=""; setTyped(next); return;
           }
         }
       }
       function handleEnter(){
         if(over) return;
-        const guess=currentRowString();
-        if(guess.length!==5 || /[^a-z]/.test(guess)){ ping("Enter a 5-letter word"); return; }
+        const guess = norm5(typed.join(""));
+        if(guess.length!==5){ ping("Enter a 5-letter word"); return; }
 
-        const sc=scoreGuess(guess,answer);
-        const ns=states.slice(); ns[row]=sc; setStates(ns);
-        const nr=rows.slice(); nr[row]=guess; setRows(nr);
+        const sc = scoreGuess(guess, answer);
+        const ns = states.slice(); ns[row]=sc; setStates(ns);
+        const nr = rows.slice(); nr[row]=guess; setRows(nr);
 
         if(guess===answer){ setOver(true); }
         else if(row===5){ setOver(true); }
@@ -315,53 +326,89 @@
         return getCSS('--key');
       }
 
-      const showSpecific = (mode==='easy') && (row>=3 || over);
+      // Hint triggers (ad-gated)
+      function unlockFirst(){ showAd(()=> setHintFirst(true)); }
+      function unlockSecond(){ showAd(()=> setHintSecond(true)); }
+      function unlockDesc(){ showAd(()=> setHintDesc(true)); }
 
       return (
         React.createElement('div', { className:'w-full max-w-[820px] px-4 pb-14 mx-auto' },
 
-          /* Top controls */
+          /* Top line */
           React.createElement('div', { className:'flex items-center justify-between py-3 text-sm muted' },
-            React.createElement('div', null,
-              'Mode: ', React.createElement('span', { className:'font-semibold text-black/80' }, mode==='easy'?'Easy':'Diff')
-            ),
+            React.createElement('div', null, 'Good luck!'),
             React.createElement('div', null,
               React.createElement('button', { onClick:start, className:'px-3 py-2 rounded-2xl key font-semibold hover:opacity-90 shadow-soft mr-2' }, 'New Game'),
               React.createElement('button', { onClick:onExit, className:'px-3 py-2 rounded-2xl key font-semibold hover:opacity-90' }, 'Home')
             )
           ),
 
-          /* Hints (behind light-bulb toggle; broad from start, specific after 3 guesses) */
+          /* Hint toggle */
           React.createElement('div', { className:'mb-3' },
             React.createElement('button', {
-              className:'px-3 py-2 rounded-2xl key font-semibold shadow-soft',
-              onClick:()=> setShowHints(v=>!v)
-            }, '💡 Hints ', showHints ? '— Hide' : '— Show')
-          ),
-          (mode==='easy' && showHints) && React.createElement('div', { className:'key rounded-2xl p-3 shadow-soft mb-1 text-sm' },
-            React.createElement('div', { className:'flex flex-col gap-1' },
-              React.createElement('div', null,
-                React.createElement('span', { className:'chip mr-2' }, 'Broad'),
-                React.createElement('span', { className:'opacity-85' }, broad || '—')
+              className:'px-3 py-2 rounded-2xl key font-semibold shadow-soft inline-flex items-center gap-2',
+              onClick:()=> setShowHints(v=>!v),
+              'aria-pressed': showHints
+            },
+              React.createElement('svg', { width:18, height:18, viewBox:"0 0 24 24", fill:"none", xmlns:"http://www.w3.org/2000/svg", 'aria-hidden':true },
+                React.createElement('path', { d:"M9 21h6m-8-3h10M12 3a7 7 0 00-4 12c.6.6 1 1.5 1 2.5V18h6v-.5c0-1 .4-1.9 1-2.5A7 7 0 0012 3z", stroke:"currentColor", 'stroke-width':1.6, 'stroke-linecap':'round', 'stroke-linejoin':'round' })
               ),
-              showSpecific
-                ? React.createElement('div', null,
-                    React.createElement('span', { className:'chip mr-2' }, 'Specific'),
-                    React.createElement('span', { className:'opacity-90' }, specific || '—')
+              showHints ? 'Hide hints' : 'Show hints'
+            )
+          ),
+
+          /* Hints panel (letters are never auto-filled on board) */
+          showHints && React.createElement('div', { className:'key rounded-2xl p-3 shadow-soft mb-2 text-sm' },
+            React.createElement('div', { className:'space-y-2' },
+
+              React.createElement('div', { className:'flex items-center justify-between' },
+                React.createElement('div', null,
+                  React.createElement('span', { className:'chip mr-2' }, 'Hint 1'),
+                  React.createElement('span', { className:'opacity-85' },
+                    hintFirst ? `Starting letter: ${answer[0].toUpperCase()}` : 'Reveal starting letter'
                   )
-                : React.createElement('div', { className:'opacity-70' }, '(Specific hint unlocks after 3 guesses)')
-            ),
-            React.createElement('div', { className:'mt-2' },
-              React.createElement('span', { className:'chip mr-2' }, 'Revealed'),
-              revealIdx.slice(0, (row===0?1:row===1?2:3)).map((i,ix)=>
-                React.createElement('span', { key:ix, className:'chip mr-1' }, (answer?answer[i].toUpperCase():'?'), ' @ ', (i+1))
+                ),
+                React.createElement('button', {
+                  className:'px-3 py-1 rounded-2xl key font-semibold hover:opacity-90 shadow-soft',
+                  onClick: unlockFirst,
+                  disabled: hintFirst
+                }, hintFirst ? 'Unlocked' : 'Watch Ad')
+              ),
+
+              React.createElement('div', { className:'flex items-center justify-between' },
+                React.createElement('div', null,
+                  React.createElement('span', { className:'chip mr-2' }, 'Hint 2'),
+                  React.createElement('span', { className:'opacity-85' },
+                    hintSecond ? `Second letter: ${answer[1].toUpperCase()}` : 'Reveal second letter'
+                  )
+                ),
+                React.createElement('button', {
+                  className:'px-3 py-1 rounded-2xl key font-semibold hover:opacity-90 shadow-soft',
+                  onClick: unlockSecond,
+                  disabled: hintSecond
+                }, hintSecond ? 'Unlocked' : 'Watch Ad')
+              ),
+
+              React.createElement('div', { className:'flex items-center justify-between' },
+                React.createElement('div', null,
+                  React.createElement('span', { className:'chip mr-2' }, 'Hint 3'),
+                  React.createElement('span', { className:'opacity-90' },
+                    hintDesc ? specific : 'Reveal one-line description'
+                  )
+                ),
+                React.createElement('button', {
+                  className:'px-3 py-1 rounded-2xl key font-semibold hover:opacity-90 shadow-soft',
+                  onClick: unlockDesc,
+                  disabled: hintDesc
+                }, hintDesc ? 'Unlocked' : 'Watch Ad')
               )
             )
           ),
 
-          /* Hidden input to raise mobile keyboard when board tapped */
-          React.createElement('input', { ref: inputRef, className:'absolute opacity-0 pointer-events-none',
-            autoCapitalize:'none',autoComplete:'off',autoCorrect:'off'
+          /* Hidden input to summon mobile keyboard when board tapped */
+          React.createElement('input', {
+            ref: inputRef, className:'absolute opacity-0 pointer-events-none',
+            autoCapitalize:'none', autoComplete:'off', autoCorrect:'off'
           }),
 
           /* Board */
@@ -369,10 +416,9 @@
             Array.from({length:6}).map((_, r) =>
               React.createElement('div', { key:r, className:'board-row' },
                 Array.from({length:5}).map((_, c) => {
-                  const pref = new Set(revealIdx.slice(0, (mode==='easy' ? (r===0?1:r===1?2:3) : 0)));
                   let ch='', st='empty';
                   if(r < row || (r===row && rows[r])){ ch = (rows[r]||'')[c] || ''; st = (states[r]||[])[c] || 'empty'; }
-                  else if(r===row){ ch = pref.has(c) ? (answer[c]||'').toUpperCase() : (typed[c]||'').toUpperCase(); }
+                  else if(r===row){ ch = (typed[c]||'').toUpperCase(); }
                   return React.createElement('div', { key:c, className:`tile cell ${st!=='empty'?st:''}` }, ch);
                 })
               )
@@ -408,7 +454,22 @@
             )
           ),
 
-          toast ? React.createElement('div', { className:'toast' }, toast) : null
+          toast ? React.createElement('div', { className:'toast' }, toast) : null,
+
+          /* ---- Simulated Ad Modal (replace with real SDK later) ---- */
+          adOpen && React.createElement('div', { className:'modal-backdrop' },
+            React.createElement('div', { className:'bg-white rounded-2xl p-5 w-[min(92vw,420px)] shadow-soft text-center' },
+              React.createElement('div', { className:'text-lg font-extrabold mb-1' }, 'Ad break'),
+              React.createElement('div', { className:'muted mb-3' }, 'Thanks! This keeps Juggle free.'),
+              React.createElement('div', { className:'key rounded-xl p-3 mb-4' }, `Ad ends in ${Math.max(0, adSeconds)}s`),
+              React.createElement('button', {
+                className:'px-4 py-2 rounded-2xl key font-semibold shadow-soft',
+                onClick: finishAd,
+                disabled: adSeconds>0,
+                style:{ opacity: adSeconds>0 ? .6 : 1 }
+              }, adSeconds>0 ? 'Please wait…' : 'Continue')
+            )
+          )
         )
       );
     }
@@ -416,12 +477,11 @@
     /* ===== App shell ===== */
     function App(){
       const [view,setView]=useState('HOME');
-      const [mode,setMode]=useState('easy');
       return (
         React.createElement('div', { className:'min-h-screen w-full' },
-          React.createElement(Header, { mode, setMode }),
+          React.createElement(Header, null),
           view==='HOME' && React.createElement(Home, { onPlay: ()=> setView('GAME') }),
-          view==='GAME' && React.createElement(Game, { mode, onExit: ()=> setView('HOME') })
+          view==='GAME' && React.createElement(Game, { onExit: ()=> setView('HOME') })
         )
       );
     }
@@ -432,4 +492,3 @@
   </script>
 </body>
 </html>
-
