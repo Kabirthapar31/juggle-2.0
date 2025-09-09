@@ -376,52 +376,54 @@
             )
           ),
 
-          /* Hints panel (letters are NOT auto-filled on the grid) */
-          showHints && React.createElement('div', { className:'key rounded-2xl p-3 shadow-soft mb-2 text-sm' },
-            React.createElement('div', { className:'space-y-2' },
+         /* Hints panel (letters are NOT auto-filled on the grid) */
+showHints && React.createElement('div', { className:'key rounded-2xl p-3 shadow-soft mb-2 text-sm' },
+  React.createElement('div', { className:'space-y-2' },
 
-              React.createElement('div', { className:'flex items-center justify-between' },
-                React.createElement('div', null,
-                  React.createElement('span', { className:'chip mr-2' }, 'HINT 1'),
-                  React.createElement('span', { className:'opacity-85' },
-                    hintFirst ? `STARTING LETTER: ${answer[0]}` : 'REVEAL STARTING LETTER'
-                  )
-                ),
-                React.createElement('button', {
-                  className:'px-3 py-1 rounded-2xl key font-semibold hover:opacity-90 shadow-soft',
-                  onClick: unlockFirst,
-                  disabled: hintFirst
-                }, hintFirst ? 'UNLOCKED' : 'WATCH AD')
-              ),
+    React.createElement('div', { className:'flex items-center justify-between' },
+      React.createElement('div', null,
+        React.createElement('span', { className:'chip mr-2' }, 'HINT 1'),
+        React.createElement('span', { className:'opacity-85' },
+          hintFirst ? `STARTING LETTER: ${answer[0]}` : 'REVEAL STARTING LETTER'
+        )
+      ),
+      React.createElement('button', {
+        className:'px-3 py-1 rounded-2xl key font-semibold hover:opacity-90 shadow-soft',
+        onClick: unlockFirst,
+        disabled: hintFirst
+      }, hintFirst ? 'UNLOCKED' : 'WATCH AD')
+    ),
 
-              React.createElement('div', { className:'flex items-center justify-between' },
-                React.createElement('div', null,
-                  React.createElement('span', { className:'chip mr-2' }, 'HINT 2'),
-                  React.createElement('span', { className:'opacity-85' },
-                    hintSecond ? `SECOND LETTER: ${answer[1]}` : 'REVEAL SECOND LETTER'
-                  )
-                ),
-                React.createElement('button', {
-                  className:'px-3 py-1 rounded-2xl key font-semibold hover:opacity-90 shadow-soft',
-                  onClick: unlockSecond,
-                  disabled: hintSecond
-                }, hintSecond ? 'UNLOCKED' : 'WATCH AD')
-              ),
+    React.createElement('div', { className:'flex items-center justify-between' },
+      React.createElement('div', null,
+        React.createElement('span', { className:'chip mr-2' }, 'HINT 2'),
+        React.createElement('span', { className:'opacity-85' },
+          hintSecond ? `SECOND LETTER: ${answer[1]}` : 'REVEAL SECOND LETTER'
+        )
+      ),
+      React.createElement('button', {
+        className:'px-3 py-1 rounded-2xl key font-semibold hover:opacity-90 shadow-soft',
+        onClick: unlockSecond,
+        disabled: hintSecond
+      }, hintSecond ? 'UNLOCKED' : 'WATCH AD')
+    ),
 
-              React.createElement('div', { className:'flex items-center justify-between' },
-                React.createElement('div', null,
-                  React.createElement('span', { className:'chip mr-2' }, 'HINT 3'),
-                  React.createElement('span', { className:'opacity-90' },
-                    hintDesc ? specific : 'REVEAL ONE-LINER'
-                  )
-                ),
-                React.createElement('button', {
-                  className:'px-3 py-1 rounded-2xl key font-semibold hover:opacity-90 shadow-soft',
-                  onClick: unlockDesc,
-                  disabled: hintDesc
-                }, hintDesc ? 'UNLOCKED' : 'WATCH AD')
-              )
-            ),
+    React.createElement('div', { className:'flex items-center justify-between' },
+      React.createElement('div', null,
+        React.createElement('span', { className:'chip mr-2' }, 'HINT 3'),
+        React.createElement('span', { className:'opacity-90' },
+          hintDesc ? specific : 'REVEAL ONE-LINER'
+        )
+      ),
+      React.createElement('button', {
+        className:'px-3 py-1 rounded-2xl key font-semibold hover:opacity-90 shadow-soft',
+        onClick: unlockDesc,
+        disabled: hintDesc
+      }, hintDesc ? 'UNLOCKED' : 'WATCH AD')
+    )
+  )
+)
+
             React.createElement('div', { className:'mt-2' },
               React.createElement('span', { className:'chip mr-2' }, 'BROAD HINT'),
               React.createElement('span', { className:'opacity-90' }, broad)
