@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en-IN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>JUGGLE — A Medical Word Game</title>
+  <meta name="description" content="JUGGLE is a clinician-grade 5-letter medical word recall game built for rapid retrieval practice." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Outfit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fbfaf7;--surface:rgba(255,255,255,0.76);--surface-solid:#ffffff;--text:#0b1220;--muted:#55657a;--muted2:#7a8aa0;--border:rgba(11,18,32,0.12);--shadow:0 18px 48px rgba(11,18,32,0.10);--brand:#c28e70;--ink:#1e293b;--ok:#1d8758;--maybe:#b98519;--no:#9b3b3b;--radius-xl:26px;--radius-lg:18px;--radius-md:14px;--tile:#ffffff;--tile-border:rgba(11,18,32,0.16);--tile-shadow:0 10px 22px rgba(11,18,32,0.06);--key:rgba(30,41,59,0.08);--key-press:rgba(30,41,59,0.14);--focus:rgba(194,142,112,0.45);--maxw:1120px;color-scheme:light}
+[data-theme="dark"]{color-scheme:dark;--bg:#070b12;--surface:rgba(17,24,39,0.64);--surface-solid:#0b1220;--text:#e6eaf0;--muted:#b8c3d2;--muted2:#90a0b8;--border:rgba(226,232,240,0.12);--shadow:0 18px 56px rgba(0,0,0,0.46);--tile:rgba(255,255,255,0.06);--tile-border:rgba(226,232,240,0.14);--tile-shadow:0 14px 28px rgba(0,0,0,0.40);--key:rgba(226,232,240,0.10);--key-press:rgba(226,232,240,0.16)}
+*{box-sizing:border-box;margin:0;padding:0}html,body{height:100%}
+body{font-family:'Outfit',ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;overflow-x:hidden;background-image:radial-gradient(900px 520px at 10% 8%,color-mix(in srgb,var(--brand) 18%,transparent),transparent 55%),radial-gradient(900px 520px at 92% 86%,color-mix(in srgb,var(--ink) 14%,transparent),transparent 62%)}
+a{color:inherit;text-decoration:none}.sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+
+/* SPLASH */
+.splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px;background:radial-gradient(900px 520px at 10% 8%,color-mix(in srgb,var(--brand) 18%,transparent),transparent 55%),radial-gradient(900px 520px at 92% 86%,color-mix(in srgb,var(--ink) 14%,transparent),transparent 62%),var(--bg);transition:opacity .4s ease}
+.splash.hide{opacity:0;pointer-events:none}
+.splash-letters{display:flex;gap:3px;font-family:'DM Serif Display',serif;font-size:clamp(48px,10vw,88px);letter-spacing:6px;perspective:800px}
+.splash-letters span{display:inline-block;opacity:0;transform:scale(0) rotateY(90deg);animation:letterPop .55s cubic-bezier(.22,1,.36,1) forwards}
+.splash-letters span:first-child{color:var(--brand)}
+.splash-letters span:nth-child(1){animation-delay:.12s}
+.splash-letters span:nth-child(2){animation-delay:.22s}
+.splash-letters span:nth-child(3){animation-delay:.32s}
+.splash-letters span:nth-child(4){animation-delay:.42s}
+.splash-letters span:nth-child(5){animation-delay:.52s}
+.splash-letters span:nth-child(6){animation-delay:.62s}
+@keyframes letterPop{0%{opacity:0;transform:scale(0) rotateY(90deg);filter:blur(8px)}60%{opacity:1;transform:scale(1.06) rotateY(-4deg);filter:blur(0)}100%{opacity:1;transform:scale(1) rotateY(0);filter:blur(0)}}
+.splash-sub{font-family:'Outfit',sans-serif;font-size:clamp(13px,2.2vw,17px);color:var(--muted);letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-top:8px;opacity:0;animation:subUp .6s ease forwards;animation-delay:.8s}
+@keyframes subUp{0%{opacity:0;transform:translateY(10px);filter:blur(3px)}100%{opacity:1;transform:translateY(0);filter:blur(0)}}
+.splash-line{width:0;height:2px;margin-top:14px;background:linear-gradient(90deg,transparent,var(--brand),transparent);border-radius:99px;animation:lineGrow .5s ease forwards;animation-delay:1s}
+@keyframes lineGrow{0%{width:0;opacity:0}100%{width:140px;opacity:1}}
+.splash-inner{display:flex;flex-direction:column;align-items:center}
+.splash-inner.fadeOut{animation:splashOut .5s ease forwards}
+@keyframes splashOut{0%{opacity:1;transform:scale(1);filter:blur(0)}100%{opacity:0;transform:scale(.93);filter:blur(10px)}}
+@media(prefers-reduced-motion:reduce){.splash-letters span{animation:none;opacity:1;transform:none;filter:none}.splash-sub{animation:none;opacity:1;transform:none}.splash-line{animation:none;width:140px;opacity:1}.splash-inner.fadeOut{animation:none;opacity:0}}
+
+.app-hidden{visibility:hidden}
+.shell{max-width:var(--maxw);margin:0 auto;padding:18px 16px calc(24px + env(safe-area-inset-bottom))}
+
+/* TOPBAR */
+.topbar{position:sticky;top:0;z-index:40;padding:12px 0;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);background:color-mix(in srgb,var(--bg) 82%,transparent);border-bottom:1px solid var(--border)}
+.topbar-inner{max-width:var(--maxw);margin:0 auto;padding:0 16px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.brand{display:flex;align-items:baseline;gap:10px;min-width:160px}
+.brand-word{font-family:'DM Serif Display',serif;font-weight:400;letter-spacing:.14em;text-transform:uppercase;font-size:18px}
+.brand-word .j{color:var(--brand)}
+.brand-sub{font-weight:700;font-size:12px;color:var(--muted2);letter-spacing:.06em}
+
+/* PILLS */
+.pill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);background:color-mix(in srgb,var(--surface) 92%,transparent);border-radius:999px;padding:7px 12px;font-weight:700;font-size:12px;color:color-mix(in srgb,var(--text) 76%,transparent)}
+.subject-pill{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;border:1px solid}
+.subject-pill.anatomy{background:rgba(29,135,88,.1);border-color:rgba(29,135,88,.3);color:#1d8758}
+.subject-pill.paediatrics{background:rgba(185,133,25,.1);border-color:rgba(185,133,25,.3);color:#b98519}
+[data-theme="dark"] .subject-pill.anatomy{background:rgba(29,135,88,.18);color:#5eead4;border-color:rgba(94,234,212,.3)}
+[data-theme="dark"] .subject-pill.paediatrics{background:rgba(185,133,25,.18);color:#fde68a;border-color:rgba(253,230,138,.3)}
+
+/* CARDS */
+.card{border:1px solid var(--border);background:var(--surface);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-radius:var(--radius-xl);box-shadow:var(--shadow)}
+
+/* BUTTONS */
+.btn{appearance:none;border:1px solid var(--border);border-radius:999px;padding:14px 18px;font-weight:800;font-size:14px;font-family:inherit;background:color-mix(in srgb,var(--surface) 86%,transparent);color:var(--text);cursor:pointer;transition:transform .08s ease,filter .18s ease,background .18s ease;box-shadow:0 10px 26px rgba(11,18,32,.10)}
+.btn:active{transform:translateY(1px)}
+.btn-primary{background:linear-gradient(180deg,#1e293b,#0b1220);color:#fff;border-color:rgba(255,255,255,.12);box-shadow:0 18px 44px rgba(2,6,23,.38)}
+.btn-primary:hover{filter:brightness(1.06)}
+.btn-ghost{background:transparent;box-shadow:none}
+.btn-small{padding:10px 12px;font-size:12px;box-shadow:none}
+.iconbtn{width:40px;height:40px;border-radius:999px;border:1px solid var(--border);background:color-mix(in srgb,var(--surface) 86%,transparent);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:transform .08s ease}
+.iconbtn:active{transform:translateY(1px)}
+.icon{width:18px;height:18px;stroke:var(--text);stroke-width:2;fill:none;opacity:.92}
+
+/* LANDING */
+.landing-wrap{display:flex;flex-direction:column;align-items:center;padding-top:24px;animation:landIn .6s ease}
+@keyframes landIn{0%{opacity:0;transform:translateY(20px)}100%{opacity:1;transform:translateY(0)}}
+.landing-logo{font-family:'DM Serif Display',serif;font-size:clamp(42px,8vw,68px);letter-spacing:8px;text-align:center}
+.landing-logo .j{color:var(--brand)}
+.landing-tag{font-size:17px;color:var(--muted);letter-spacing:2.5px;text-transform:uppercase;font-weight:700;text-align:center;margin-top:2px}
+.landing-divider{width:180px;height:2px;margin:16px auto 24px;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--brand) 65%,transparent),color-mix(in srgb,var(--text) 15%,transparent),color-mix(in srgb,var(--brand) 65%,transparent),transparent);border-radius:99px}
+/* HERO CARD */
+.hero-card{width:min(640px,94vw);border:1px solid var(--border);background:var(--surface);backdrop-filter:blur(14px);border-radius:var(--radius-xl);box-shadow:var(--shadow);padding:28px 24px;text-align:center;position:relative;overflow:hidden}
+.hero-card::before{content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:color-mix(in srgb,var(--brand) 10%,transparent);pointer-events:none}
+.hero-card::after{content:'';position:absolute;bottom:-40px;left:-40px;width:140px;height:140px;border-radius:50%;background:color-mix(in srgb,var(--ok) 6%,transparent);pointer-events:none}
+.hero-tagline{font-family:'DM Serif Display',serif;font-size:clamp(20px,4vw,28px);font-weight:400;color:var(--text);margin-bottom:6px;position:relative}
+.hero-sub{font-size:14px;color:var(--muted);line-height:1.6;max-width:480px;margin:0 auto 18px}
+.hero-preview{display:flex;gap:8px;justify-content:center;margin:16px 0}
+.hero-preview .pt{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:15px;color:#fff;border:1px solid rgba(255,255,255,.2);animation:ptPop .4s ease both}
+.hero-preview .pt:nth-child(1){animation-delay:.1s}
+.hero-preview .pt:nth-child(2){animation-delay:.2s}
+.hero-preview .pt:nth-child(3){animation-delay:.3s}
+.hero-preview .pt:nth-child(4){animation-delay:.4s}
+.hero-preview .pt:nth-child(5){animation-delay:.5s}
+@keyframes ptPop{0%{opacity:0;transform:scale(0) rotateX(90deg)}70%{opacity:1;transform:scale(1.08) rotateX(-3deg)}100%{opacity:1;transform:scale(1) rotateX(0)}}
+.hero-features{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0 6px;text-align:left}
+@media(max-width:440px){.hero-features{grid-template-columns:1fr}}
+.hf{padding:12px 14px;border-radius:16px;border:1px solid var(--border);background:color-mix(in srgb,var(--surface) 80%,transparent)}
+.hf-icon{font-size:18px;margin-bottom:4px}
+.hf-title{font-size:12px;font-weight:900;letter-spacing:.06em;color:var(--text);margin-bottom:2px}
+.hf-desc{font-size:11.5px;color:var(--muted);line-height:1.45}
+.hero-stats{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:14px}
+.hero-stat{padding:6px 14px;border-radius:999px;border:1px solid var(--border);background:color-mix(in srgb,var(--surface) 88%,transparent);font-size:12px;font-weight:800;color:var(--muted)}
+.hero-stat b{color:var(--text)}
+.hero-subjects{display:flex;gap:8px;justify-content:center;margin-top:12px}
+.landing-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:22px}
+.landing-cta .btn{min-width:200px}
+.landing-how-link{margin-top:12px;font-size:12px;color:var(--muted2);cursor:pointer}
+.landing-how-link:hover{color:var(--brand)}
+.fineprint{font-size:12px;color:var(--muted2);line-height:1.45}
+
+/* GAME */
+.game-wrap{display:grid;gap:16px;padding-top:18px;padding-bottom:16px}
+.subject-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:14px 16px;border-radius:var(--radius-lg);border:1px solid var(--border);background:color-mix(in srgb,var(--surface) 86%,transparent);flex-wrap:wrap}
+.subject-head .label{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted2);font-weight:900}
+.subject-head .value{font-size:14px;font-weight:900}
+.subject-head .right{display:flex;align-items:center;gap:10px}
+.board{width:min(390px,calc(100vw - 32px));margin:0 auto;display:grid;gap:10px;cursor:text}
+.row{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.tile{aspect-ratio:1/1;min-height:58px;border-radius:16px;border:1px solid var(--tile-border);background:var(--tile);box-shadow:var(--tile-shadow);display:grid;place-items:center;font-weight:900;font-size:clamp(22px,4.2vw,26px);letter-spacing:.10em;text-transform:uppercase;user-select:none;transform:translateZ(0)}
+.tile.empty{color:color-mix(in srgb,var(--text) 40%,transparent);box-shadow:none;background:color-mix(in srgb,var(--tile) 92%,transparent)}
+.tile.active{border-color:color-mix(in srgb,var(--brand) 40%,var(--tile-border))}
+.tile.correct{background:var(--ok);border-color:rgba(255,255,255,.22);color:#fff;box-shadow:none}
+.tile.present{background:var(--maybe);border-color:rgba(255,255,255,.22);color:#fff;box-shadow:none}
+.tile.wrong{background:var(--no);border-color:rgba(255,255,255,.22);color:#fff;box-shadow:none}
+@keyframes reveal{0%{transform:rotateX(0);filter:brightness(1)}49%{transform:rotateX(88deg);filter:brightness(.96)}50%{transform:rotateX(88deg);filter:brightness(.96)}100%{transform:rotateX(0);filter:brightness(1)}}
+.tile.reveal{transform-style:preserve-3d;animation:reveal 420ms ease-in-out both}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+.row.shake{animation:shake 260ms ease-in-out}
+
+/* KEYBOARD */
+.kbd{width:min(560px,96vw);margin:0 auto;display:grid;gap:8px;user-select:none}
+.kbd-row{display:flex;justify-content:center;gap:6px}
+.key{height:52px;min-width:34px;padding:0 10px;border-radius:12px;border:1px solid var(--border);background:var(--key);font-weight:900;font-size:12px;letter-spacing:.08em;text-transform:uppercase;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .06s ease,background .12s ease;touch-action:manipulation;font-family:inherit;color:var(--text)}
+.key:active{transform:translateY(1px);background:var(--key-press)}
+.key.correct{background:var(--ok);border-color:rgba(255,255,255,.2);color:#fff}
+.key.present{background:var(--maybe);border-color:rgba(255,255,255,.2);color:#fff}
+.key.wrong{background:var(--no);border-color:rgba(255,255,255,.2);color:#fff;opacity:.92}
+.key.wide{min-width:92px}
+.under-controls{width:min(560px,96vw);margin:8px auto 0;display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:center}
+
+/* HINTS */
+.hints-inline{width:min(420px,94vw);margin:0 auto;display:grid;gap:8px}
+.hint-card{border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 14px;background:color-mix(in srgb,var(--surface) 86%,transparent);font-size:13px;color:var(--muted);line-height:1.55;cursor:pointer;transition:all .15s ease;position:relative;overflow:hidden}
+.hint-card:hover{border-color:color-mix(in srgb,var(--text) 22%,transparent)}
+.hint-card.locked{color:transparent;user-select:none}
+.hint-card.locked::after{content:'Click to reveal hint';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--muted2);letter-spacing:.3px;background:color-mix(in srgb,var(--surface-solid) 88%,transparent);backdrop-filter:blur(4px)}
+.hint-num{font-weight:900;color:var(--brand);margin-right:5px;font-size:11px}
+
+
+.hint-line{width:min(390px,calc(100vw - 32px));margin:0 auto 2px;text-align:left;font-size:13px;font-weight:700;color:var(--muted)}
+.hint-line button{appearance:none;border:0;background:none;padding:0;margin-left:6px;font:inherit;font-weight:900;color:var(--brand);cursor:pointer}
+.mobile-input{position:fixed;left:50%;bottom:max(12px,env(safe-area-inset-bottom));transform:translateX(-50%);width:1px;height:1px;opacity:.01;pointer-events:none;border:0;padding:0;background:transparent;color:transparent;caret-color:transparent}
+.mobile-input.active{pointer-events:auto}
+@media(max-width:720px){.topbar-inner{justify-content:center}.brand{min-width:auto}.subject-pill,.pill{max-width:100%}.iconbtn{width:38px;height:38px}}
+@media(max-width:560px){.shell{padding:14px 12px calc(20px + env(safe-area-inset-bottom))}.subject-head{padding:12px 14px}.board{width:min(370px,calc(100vw - 24px));gap:8px}.row{gap:8px}.tile{min-height:52px;border-radius:14px;font-size:clamp(20px,6vw,24px)}.kbd{width:min(560px,calc(100vw - 18px));gap:6px}.kbd-row{gap:5px}.key{height:48px;min-width:0;flex:1 1 0;padding:0 4px;font-size:11px;border-radius:11px}.key.wide{flex:1.45 1 0;min-width:60px}.under-controls{width:min(560px,calc(100vw - 18px))}.hint-line{width:min(370px,calc(100vw - 24px));font-size:12px}}
+@media(max-width:400px){.board{width:calc(100vw - 20px)}.tile{min-height:48px;font-size:clamp(18px,6.4vw,22px);letter-spacing:.08em}.under-controls{grid-template-columns:1fr}.landing-tag{font-size:16px}}
+
+/* RESULTS */
+.results{padding-top:18px;display:grid;gap:16px}
+.results-grid{display:grid;gap:14px}
+@media(min-width:960px){.results-grid{grid-template-columns:1fr 1fr;gap:16px;align-items:start}}
+.section-title{font-weight:900;letter-spacing:.08em;text-transform:uppercase;font-size:12px;color:var(--muted2);margin:0 0 10px 0}
+.kv{display:grid;gap:8px}
+.kv-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border-radius:14px;border:1px solid var(--border);background:color-mix(in srgb,var(--surface) 82%,transparent)}
+.kv-row .k{font-size:12px;color:var(--muted);font-weight:700}
+.kv-row .v{font-size:13px;font-weight:900}
+.chart{border-radius:var(--radius-lg);border:1px solid var(--border);background:color-mix(in srgb,var(--surface) 82%,transparent);padding:12px}
+
+/* MODAL */
+.backdrop{position:fixed;inset:0;background:rgba(2,6,23,.54);display:grid;place-items:center;padding:18px;z-index:60}
+.modal{width:min(720px,96vw);border-radius:var(--radius-xl);border:1px solid var(--border);background:var(--surface-solid);box-shadow:var(--shadow);overflow:hidden}
+[data-theme="dark"] .modal{background:var(--surface-solid)}
+.modal-head{padding:14px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.modal-title{font-weight:900}
+.modal-body{padding:16px;color:color-mix(in srgb,var(--text) 88%,transparent);line-height:1.55}
+.clue{border-radius:16px;border:1px solid var(--border);background:color-mix(in srgb,var(--surface) 86%,transparent);padding:12px;display:grid;gap:8px}
+.clue .hdr{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.clue .name{font-weight:900;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted2)}
+.clue .text{font-size:14px;font-weight:700;color:color-mix(in srgb,var(--text) 90%,transparent)}
+.clue .hidden{color:color-mix(in srgb,var(--muted2) 85%,transparent);font-weight:700;font-size:14px}
+
+/* TOAST */
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom));padding:10px 16px;border-radius:999px;border:1px solid var(--border);background:color-mix(in srgb,var(--surface-solid) 86%,transparent);box-shadow:var(--shadow);font-weight:900;font-size:12px;z-index:80}
+[data-theme="dark"] .toast{background:rgba(17,24,39,.72)}
+
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:14px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important}}
+</style>
+</head>
+<body>
+  <div id="splash" class="splash" aria-hidden="true">
+    <div class="splash-inner" id="splashInner">
+      <div class="splash-letters"><span>J</span><span>U</span><span>G</span><span>G</span><span>L</span><span>E</span></div>
+      <div class="splash-sub">A Medical Word Game</div>
+      <div class="splash-line"></div>
+    </div>
+  </div>
+  <div id="app" class="app-hidden"></div>
+  <div id="live" class="sr-only" aria-live="polite"></div>
+<script>
+(function(){"use strict";
+
+/* ═══ SPLASH ═══ */
+(function(){
+  var sp=document.getElementById("splash"),inner=document.getElementById("splashInner"),appEl=document.getElementById("app");
+  var reduced=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if(reduced){setTimeout(function(){if(sp)sp.classList.add("hide");if(appEl)appEl.classList.remove("app-hidden");setTimeout(function(){if(sp&&sp.parentNode)sp.parentNode.removeChild(sp);},300);},400);return;}
+  setTimeout(function(){if(inner)inner.classList.add("fadeOut");},2100);
+  setTimeout(function(){if(sp)sp.classList.add("hide");if(appEl)appEl.classList.remove("app-hidden");setTimeout(function(){if(sp&&sp.parentNode)sp.parentNode.removeChild(sp);},400);},2600);
+})();
+
+/* ═══ WORD DATA ═══ */
+var LEXICON=[
+{word:"AORTA",subject:"Anatomy",hints:["The main trunk of the systemic arterial system, emerging from the left ventricle.","Passes through the diaphragm at the level of the T12 vertebra (aortic hiatus).","Divided anatomically into ascending, arch, and descending (thoracic and abdominal) segments."]},
+{word:"ATLAS",subject:"Anatomy",hints:["The first cervical vertebra (C1), which supports the sphere of the head.","Unique among vertebrae as it lacks a body and a spinous process.","Articulates superiorly with the occipital condyles to form the atlanto-occipital joint."]},
+{word:"BRAIN",subject:"Anatomy",hints:["The major organ of the central nervous system, contained within the cranial cavity.","Composed of the cerebrum, cerebellum, and brainstem.","Invested by three meningeal layers: dura mater, arachnoid mater, and pia mater."]},
+{word:"CECUM",subject:"Anatomy",hints:["A blind intestinal pouch located in the right iliac fossa.","The beginning of the large intestine, lying below the level of the ileocecal junction.","The vermiform appendix is attached to its posteromedial surface."]},
+{word:"COLON",subject:"Anatomy",hints:["The part of the large intestine extending from the cecum to the rectum.","Distinguished by external longitudinal muscle bands called taeniae coli.","Segmented into haustra (sacculations) produced by the contraction of taeniae."]},
+{word:"FEMUR",subject:"Anatomy",hints:["The longest and strongest bone in the body, constituting the skeleton of the thigh.","Its proximal head articulates with the acetabulum of the hip bone.","Distally, its condyles articulate with the tibia and patella."]},
+{word:"HEART",subject:"Anatomy",hints:["A muscular pump located in the middle mediastinum, enclosed by the pericardium.","Consists of four chambers: two atria (receiving) and two ventricles (discharging).","Its wall is composed of three layers: epicardium, myocardium, and endocardium."]},
+{word:"HYOID",subject:"Anatomy",hints:["A U-shaped bone located in the anterior neck at the level of the C3 vertebra.","The only bone in the body that does not articulate directly with any other bone.","Suspended by stylohyoid ligaments and serves as an attachment for tongue muscles."]},
+{word:"ILEUM",subject:"Anatomy",hints:["The third and longest portion of the small intestine.","Characterized by the presence of Peyer's patches (aggregated lymphoid nodules).","Terminates at the ileocecal valve where it empties into the large intestine."]},
+{word:"ILIUM",subject:"Anatomy",hints:["The superior, fan-shaped part of the hip bone.","Features the iliac crest, bounded by the anterior and posterior superior iliac spines.","Forms the superior part of the acetabulum and articulates medially with the sacrum."]},
+{word:"INCUS",subject:"Anatomy",hints:["The middle auditory ossicle located in the tympanic cavity.","Shaped like an anvil, possessing a body and two limbs (crura).","Articulates laterally with the malleus and medially with the stapes."]},
+{word:"LIVER",subject:"Anatomy",hints:["The largest gland in the body, occupying the right hypochondrium and epigastrium.","Anatomically divided into four lobes: right, left, caudate, and quadrate.","Receives venous blood from the GI tract via the hepatic portal vein."]},
+{word:"NERVE",subject:"Anatomy",hints:["A bundle of nerve fibers (axons) located outside the central nervous system.","Wrapped in three connective tissue layers: epineurium, perineurium, and endoneurium.","Classified as cranial or spinal depending on its origin from the brain or spinal cord."]},
+{word:"OVARY",subject:"Anatomy",hints:["The female gonad responsible for producing oocytes and hormones.","Located on the lateral wall of the pelvis in a depression called the ovarian fossa.","Attached to the posterior layer of the broad ligament by the mesovarium."]},
+{word:"PSOAS",subject:"Anatomy",hints:["A large fusiform muscle of the posterior abdominal wall (Psoas major).","Originates from the lumbar vertebrae and inserts on the lesser trochanter of the femur.","Acts as the chief flexor of the thigh at the hip joint."]},
+{word:"PUBIS",subject:"Anatomy",hints:["The anteroinferior part of the hip bone.","Consists of a body, a superior ramus, and an inferior ramus.","The two bodies articulate in the median plane at the pubic symphysis."]},
+{word:"SCALP",subject:"Anatomy",hints:["The covering of the cranial vault, extending from the eyebrows to the nuchal lines.","Composed of 5 layers: Skin, Connective tissue, Aponeurosis, Loose tissue, Pericranium.","The fourth layer (loose connective tissue) constitutes the danger area for infection spread."]},
+{word:"SKULL",subject:"Anatomy",hints:["The skeleton of the head, consisting of the neurocranium and viscerocranium.","Contains 22 bones, most of which are joined by fibrous sutures.","Provides the protective cavity for the brain and the framework for the face."]},
+{word:"TALUS",subject:"Anatomy",hints:["A major bone of the tarsus (ankle) that transfers weight from the tibia to the foot.","Features a trochlea that articulates with the tibia and fibula.","Unique among tarsal bones as it has no muscular attachments."]},
+{word:"TIBIA",subject:"Anatomy",hints:["The medial and larger of the two bones of the leg (shin bone).","Its proximal flat surface (plateau) articulates with the femoral condyles.","Distally, its medial malleolus forms the prominence on the inner side of the ankle."]},
+{word:"APGAR",subject:"Paediatrics",hints:["A rapid scoring system used at 1 and 5 minutes after birth to assess neonatal transition.","Components include Color, Heart Rate, Reflex Irritability, Muscle Tone, and Respiration.","A score of 7-10 is normal; scores <7 indicate the need for resuscitative measures."]},
+{word:"CROUP",subject:"Paediatrics",hints:["Acute laryngotracheobronchitis characterized by a barking, seal-like cough.","Neck radiograph typically reveals the steeple sign due to subglottic narrowing.","Parainfluenza virus is the most common etiological agent."]},
+{word:"MUMPS",subject:"Paediatrics",hints:["Viral infection presenting with bilateral parotitis and displacement of the ear lobe.","Complications can include orchitis in post-pubertal males and aseptic meningitis.","Preventable via vaccination; the incubation period is typically 16-18 days."]},
+{word:"POLIO",subject:"Paediatrics",hints:["Enteroviral infection that specifically destroys anterior horn cells of the spinal cord.","Clinically manifests as asymmetric flaccid paralysis without sensory loss.","Largely eradicated due to OPV (Sabin) and IPV (Salk) vaccination campaigns."]},
+{word:"FEVER",subject:"Paediatrics",hints:["Defined as rectal temperature > 38C (100.4F); the most common pediatric chief complaint.","A rapid rise in temperature can trigger seizures in children aged 6 months to 6 years.","Antipyretics provide comfort but do not prevent the recurrence of febrile seizures."]},
+{word:"COLIC",subject:"Paediatrics",hints:["Paroxysmal crying in a healthy infant often following the Rule of Threes.","Defined as crying >3 hours/day, >3 days/week, for >3 weeks.","Typically begins at 2-3 weeks of age and resolves spontaneously by 3-4 months."]},
+{word:"ATOPY",subject:"Paediatrics",hints:["Genetic predisposition to produce IgE antibodies in response to common allergens.","The clinical triad consists of allergic rhinitis, asthma, and atopic dermatitis.","Often associated with a positive family history of allergic diseases."]},
+{word:"HIVES",subject:"Paediatrics",hints:["Medical term: Urticaria; characterized by pruritic, erythematous, raised wheals.","Represents a Type I hypersensitivity reaction involving histamine release from mast cells.","Lesions are transient, typically fading or moving within 24 hours without scarring."]},
+{word:"MILIA",subject:"Paediatrics",hints:["Tiny, pearly-white epidermal cysts containing keratin, common on a newborns nose.","Benign condition caused by retention of keratin within the dermis.","Resolves spontaneously within the first few weeks of life; no treatment is required."]},
+{word:"APNEA",subject:"Paediatrics",hints:["Cessation of airflow for >20 seconds, or shorter if accompanied by bradycardia/cyanosis.","Common in preterm infants due to immature respiratory control centers.","Methylxanthines (e.g., caffeine) are the pharmacological treatment of choice."]},
+{word:"WILMS",subject:"Paediatrics",hints:["Nephroblastoma: The most common primary renal malignancy in children.","Presents as an asymptomatic, smooth abdominal mass that usually does not cross the midline.","Associated with WAGR syndrome (Aniridia, Genitourinary anomalies, Retardation)."]},
+{word:"PALSY",subject:"Paediatrics",hints:["Cerebral ___: A group of permanent disorders of movement and posture.","Caused by non-progressive disturbance to the developing fetal or infant brain.","Spastic diplegia is the most common form seen in premature infants."]},
+{word:"ABUSE",subject:"Paediatrics",hints:["Non-accidental injury; signs include retinal hemorrhages (Shaken Baby Syndrome).","Spiral fractures of long bones or posterior rib fractures are highly suspicious.","Mandatory reporting is required by law if this diagnosis is suspected."]},
+{word:"SHUNT",subject:"Paediatrics",hints:["Left-to-right ___ (e.g., VSD, PDA) increases pulmonary blood flow and can cause failure.","Right-to-left ___ bypasses the lungs, leading to systemic cyanosis (e.g., Tetralogy of Fallot).","Reversal of flow due to severe pulmonary hypertension is known as Eisenmenger syndrome."]},
+{word:"SHOCK",subject:"Paediatrics",hints:["State of inadequate tissue perfusion; hypotension is a late, ominous sign in children.","Initial fluid resuscitation typically involves 20 mL/kg of isotonic crystalloid.","Clinical signs include tachycardia, cold extremities, and prolonged capillary refill (>2s)."]},
+{word:"CAPUT",subject:"Paediatrics",hints:["___ Succedaneum: Diffuse, boggy edema of the fetal scalp due to birth trauma.","Key feature: The swelling crosses the suture lines (unlike Cephalohematoma).","Benign condition that resolves spontaneously within days after birth."]},
+{word:"TONIC",subject:"Paediatrics",hints:["A phase of generalized seizures characterized by sudden, sustained muscle stiffening.","Often associated with apnea and cyanosis, immediately preceding the clonic phase.","Differentiation from myoclonic jerks or atonic (drop) attacks is crucial for diagnosis."]},
+{word:"GRASP",subject:"Paediatrics",hints:["Palmar ___: A primitive reflex present at birth in full-term infants.","Elicited by placing a finger in the infants palm, causing flexion of the infants fingers.","Persistence beyond 4-6 months is abnormal and may indicate cerebral palsy."]},
+{word:"PULSE",subject:"Paediatrics",hints:["Weak or absent femoral ___ suggests Coarctation of the Aorta.","Bounding ___ is a classic sign of a large Patent Ductus Arteriosus (PDA).","In infant CPR, the brachial artery is the preferred site for assessment."]},
+{word:"FLUID",subject:"Paediatrics",hints:["Maintenance ___ requirements are calculated using the Holliday-Segar (4-2-1) method.","Isotonic ___ (Normal Saline) is the preferred agent for bolus resuscitation in shock.","Assessment of dehydration status relies on skin turgor, fontanelle, and mucous membranes."]}
+];
+
+/* ═══ HELPERS ═══ */
+var app=document.getElementById("app"),live=document.getElementById("live");
+var STORAGE={theme:"juggle.theme",prefs:"juggle.prefs.v2",stats:"juggle.stats.v2",lex:"juggle.lex.v2",recent:"juggle.recent.v2"};
+var DEFAULT_PREFS={practiceMode:"random",showOnScreenKeyboard:true,reduceMotion:false};
+var DEFAULT_STATS={version:1,games:0,wins:0,attemptsHist:[0,0,0,0,0,0,0],streak:0,bestStreak:0,lastPlayDate:null,scoreHistory:[],medianAttempts:0,recallIndex:0};
+function safeParse(k,fb){try{var r=localStorage.getItem(k);if(!r)return fb;return JSON.parse(r)||fb;}catch(e){return fb;}}
+function safeWrite(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function clamp(n,a,b){return Math.max(a,Math.min(b,n));}
+function todayStr(){var d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+function ydayStr(){var d=new Date();d.setDate(d.getDate()-1);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+function median(nums){var a=nums.slice().sort(function(x,y){return x-y;});var n=a.length;if(!n)return 0;var m=Math.floor(n/2);return(n%2)?a[m]:(a[m-1]+a[m])/2;}
+function scoreGuess(guess,answer){var res=Array(5).fill("wrong");var counts={};for(var i=0;i<5;i++){counts[answer[i]]=(counts[answer[i]]||0)+1;}for(var i=0;i<5;i++){if(guess[i]===answer[i]){res[i]="correct";counts[guess[i]]--;}}for(var i=0;i<5;i++){if(res[i]==="correct")continue;var ch=guess[i];if((counts[ch]||0)>0){res[i]="present";counts[ch]--;}}return res;}
+function computeRoundScore(o){if(!o.won)return 0;return clamp(Math.round(100-(o.attempts-1)*10-o.cluesUsed*12),0,100);}
+function updateStreak(stats){var t=todayStr();if(!stats.lastPlayDate)stats.streak=1;else if(stats.lastPlayDate===t){}else if(stats.lastPlayDate===ydayStr())stats.streak+=1;else stats.streak=1;stats.lastPlayDate=t;stats.bestStreak=Math.max(stats.bestStreak,stats.streak);}
+function recomputeAggregateStats(stats){var att=[];for(var i=1;i<=6;i++)for(var k=0;k<stats.attemptsHist[i];k++)att.push(i);stats.medianAttempts=att.length?median(att):0;var hist=stats.scoreHistory.slice(-30);stats.recallIndex=hist.length?Math.round(hist.reduce(function(a,b){return a+b;},0)/hist.length):0;}
+function escapeHtml(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");}
+
+var prefs=Object.assign({},DEFAULT_PREFS,safeParse(STORAGE.prefs,{}));safeWrite(STORAGE.prefs,prefs);
+var state={screen:"landing",modal:null,toast:null,theme:safeParse(STORAGE.theme,null)||(window.matchMedia&&window.matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light"),prefs:prefs,game:null,lastResult:null,inputActive:false};
+function setTheme(next){state.theme=next;document.documentElement.setAttribute("data-theme",next);safeWrite(STORAGE.theme,next);}
+setTheme(state.theme);
+function shouldReduceMotion(){return state.prefs.reduceMotion||(window.matchMedia&&window.matchMedia("(prefers-reduced-motion:reduce)").matches);}
+var toastTimer=null;
+function toast(msg){state.toast=msg;live.textContent=msg;if(toastTimer)clearTimeout(toastTimer);toastTimer=setTimeout(function(){state.toast=null;live.textContent="";render();},1400);render();}
+
+/* ═══ WORD SELECTION ═══ */
+function recentLoad(){return safeParse(STORAGE.recent,[]);}
+function recentSave(arr){safeWrite(STORAGE.recent,arr.slice(-10));}
+function selectNextEntry(){var recent=new Set(recentLoad());var candidates=LEXICON.map(function(e){var p=Math.random()*1000;if(recent.has(e.word))p-=500;return{entry:e,priority:p};});candidates.sort(function(a,b){return b.priority-a.priority;});return candidates[0].entry;}
+function recordRecent(word){var arr=recentLoad();arr.push(word);recentSave(arr);}
+
+/* ═══ GAME LIFECYCLE ═══ */
+function startGame(){var entry=selectNextEntry();recordRecent(entry.word);state.game={entry:entry,answer:entry.word,subject:entry.subject,rows:Array(6).fill(""),evals:Array(6).fill(null),rowIndex:0,current:"",keyState:{},revealRow:null,invalidRow:null,status:"playing",startedAt:Date.now(),endedAt:null,cluesRevealed:[false,false,false],cluesUsed:0};state.lastResult=null;state.screen="game";state.modal=null;state.inputActive=false;render();}
+function goHome(){state.screen="landing";state.modal=null;state.game=null;state.inputActive=false;render();}
+function openModal(name){state.modal=name;blurGameInput();render();}
+function closeModal(){state.modal=null;render();}
+function setPref(key,val){state.prefs[key]=val;safeWrite(STORAGE.prefs,state.prefs);render();}
+
+function applyKeyStateFromRow(guess,rowEval,keyState){for(var i=0;i<5;i++){var ch=guess[i],st=rowEval[i];if(!keyState[ch])keyState[ch]=st;else{var prev=keyState[ch];if(st==="correct")keyState[ch]="correct";else if(st==="present"&&prev!=="correct")keyState[ch]="present";else if(st==="wrong"&&prev!=="correct"&&prev!=="present")keyState[ch]="wrong";}}}
+
+function submitGuess(){var g=state.game;if(!g||g.status!=="playing")return;var guess=(g.current||"").toUpperCase();if(guess.length!==5){g.invalidRow=g.rowIndex;toast("Enter 5 letters");render();setTimeout(function(){g.invalidRow=null;render();},260);return;}if(!/^[A-Z]{5}$/.test(guess)){toast("Letters A\u2013Z only");return;}var rowEval=scoreGuess(guess,g.answer);g.rows[g.rowIndex]=guess;g.evals[g.rowIndex]=rowEval;applyKeyStateFromRow(guess,rowEval,g.keyState);g.revealRow=g.rowIndex;g.current="";blurGameInput();render();var perTile=shouldReduceMotion()?0:90;var duration=shouldReduceMotion()?0:420;var total=perTile*4+duration+20;setTimeout(function(){g.revealRow=null;if(guess===g.answer){endGame(true,g.rowIndex+1);}else if(g.rowIndex===5){endGame(false,6);}else{g.rowIndex+=1;render();}},total);}
+
+function endGame(won,attempts){var g=state.game;if(!g||g.status!=="playing")return;g.status=won?"won":"lost";g.endedAt=Date.now();var durationMs=g.endedAt-g.startedAt;var roundScore=computeRoundScore({won:won,attempts:attempts,cluesUsed:g.cluesUsed});var stats=Object.assign({},DEFAULT_STATS,safeParse(STORAGE.stats,{}));stats.games+=1;if(won)stats.wins+=1;stats.attemptsHist[won?attempts:0]+=1;updateStreak(stats);stats.scoreHistory=(stats.scoreHistory||[]).concat([roundScore]).slice(-30);recomputeAggregateStats(stats);safeWrite(STORAGE.stats,stats);state.lastResult={won:won,attempts:attempts,durationMs:durationMs,answer:g.answer,subject:g.subject,cluesUsed:g.cluesUsed,cluesRevealed:g.cluesRevealed.slice(),roundScore:roundScore};state.screen="results";render();}
+
+function inputLetter(ch){var g=state.game;if(!g||g.status!=="playing")return;if(g.current.length>=5)return;g.current+=ch;render();}
+function backspace(){var g=state.game;if(!g||g.status!=="playing")return;g.current=g.current.slice(0,-1);render();}
+function revealClue(index){var g=state.game;if(!g||g.status!=="playing")return;if(g.cluesRevealed[index])return;g.cluesRevealed[index]=true;g.cluesUsed+=1;toast("Hint revealed (affects score)");render();}
+
+/* ═══ ICONS ═══ */
+function icon(name){var c='class="icon" viewBox="0 0 24 24" aria-hidden="true"';switch(name){case"home":return'<svg '+c+'><path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg>';case"info":return'<svg '+c+'><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z"/><path d="M12 10v7"/><path d="M12 7h.01"/></svg>';case"bulb":return'<svg '+c+'><path d="M9 18h6"/><path d="M10 22h4"/><path d="M8 14a6 6 0 1 1 8 0c-1.2 1-1.8 2-2 3H10c-.2-1-0.8-2-2-3z"/></svg>';case"chart":return'<svg '+c+'><path d="M4 19V5"/><path d="M20 19H4"/><path d="M7 15l3-3 3 2 4-5"/></svg>';case"moon":return'<svg '+c+'><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.5 6.5 0 1 0 9.8 9.8z"/></svg>';case"sun":return'<svg '+c+'><path d="M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12z"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M4.93 19.07l1.41-1.41"/><path d="M17.66 6.34l1.41-1.41"/></svg>';case"close":return'<svg '+c+'><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>';default:return"";}}
+
+/* ═══ RENDERING ═══ */
+function topbar(){var subjectText=state.game?state.game.subject:"";var themeIcon=state.theme==="dark"?icon("sun"):icon("moon");var subjectPill=subjectText?'<span class="subject-pill '+subjectText.toLowerCase()+'">'+escapeHtml(subjectText)+'</span>':'<span class="pill">5-letter medical terms</span>';return'<div class="topbar"><div class="topbar-inner"><div class="brand"><div class="brand-word"><span class="j">J</span>UGGLE</div><div class="brand-sub">A Medical Word Game</div></div>'+subjectPill+'<div style="display:flex;align-items:center;gap:8px;"><button class="iconbtn" data-action="home" aria-label="Home">'+icon("home")+'</button><button class="iconbtn" data-action="open-how" aria-label="How to play">'+icon("info")+'</button><button class="iconbtn" data-action="open-clues" aria-label="Hints">'+icon("bulb")+'</button><button class="iconbtn" data-action="open-stats" aria-label="Stats">'+icon("chart")+'</button><button class="iconbtn" data-action="toggle-theme" aria-label="Toggle theme">'+themeIcon+'</button></div></div></div>';}
+
+function landing(){var stats=Object.assign({},DEFAULT_STATS,safeParse(STORAGE.stats,{}));var acc=stats.games?Math.round((stats.wins/stats.games)*100):0;var due=0;var lex=safeParse(STORAGE.lex,{});var now=Date.now();for(var i=0;i<LEXICON.length;i++){var rec=lex[LEXICON[i].word];if(!rec||((rec.nextDue||0)<=now))due++;}var statsHtml=stats.games>0?'<div class="hero-stats"><div class="hero-stat"><b>'+stats.games+'</b> played</div><div class="hero-stat"><b>'+acc+'%</b> accuracy</div><div class="hero-stat"><b>'+stats.streak+'</b> day streak</div><div class="hero-stat"><b>'+stats.recallIndex+'</b> recall</div></div>':"";var randomWord=LEXICON[Math.floor(Math.random()*LEXICON.length)];var previewHint=randomWord.hints[0].split(".")[0]+".";return topbar()+'<div class="shell"><div class="landing-wrap"><div class="landing-logo"><span class="j">J</span>UGGLE</div><div class="landing-tag">A Medical Word Game</div><div class="landing-divider"></div><div class="hero-card"><div class="hero-tagline">Simple rules. Serious thinking.</div><div class="hero-sub">A 5-letter medical word challenge built for clinicians and medical students. Guess the word in 6 attempts. Learn as you play.</div><div class="hero-preview"><div class="pt" style="background:var(--ok)">B</div><div class="pt" style="background:var(--maybe)">R</div><div class="pt" style="background:var(--no)">A</div><div class="pt" style="background:var(--no)">I</div><div class="pt" style="background:var(--ok)">N</div></div><div class="hero-features"><div class="hf"><div class="hf-icon">\u26A1</div><div class="hf-title">Quick Daily Challenge</div><div class="hf-desc">Under a minute. Fits between rounds, classes, or shifts.</div></div><div class="hf"><div class="hf-icon">\uD83E\uDE7A</div><div class="hf-title">Clinical Hints</div><div class="hf-desc">Stuck? Unlock real clinical descriptions to guide your guess.</div></div><div class="hf"><div class="hf-icon">\uD83E\uDDE0</div><div class="hf-title">Active Recall</div><div class="hf-desc">Spaced retrieval practice strengthens long-term memory.</div></div><div class="hf"><div class="hf-icon">\uD83C\uDFC6</div><div class="hf-title">Track Progress</div><div class="hf-desc">Recall Index, streaks, and attempt distribution over time.</div></div></div><div class="hero-subjects"><span class="subject-pill anatomy">Anatomy</span><span class="subject-pill paediatrics">Paediatrics</span></div>'+statsHtml+'<div style="margin-top:16px;padding:12px 14px;border-radius:14px;border:1px solid var(--border);background:color-mix(in srgb,var(--brand) 5%,transparent);text-align:left"><div style="font-size:10px;font-weight:900;letter-spacing:.15em;text-transform:uppercase;color:var(--brand);margin-bottom:4px">Sample Clue</div><div style="font-size:13px;color:var(--muted);line-height:1.5;font-style:italic">'+escapeHtml(previewHint)+'</div><div style="font-size:11px;color:var(--muted2);margin-top:4px">Can you guess the 5-letter term?</div></div></div><div class="landing-cta"><button class="btn btn-primary" data-action="start-game">Play Now</button></div><div class="landing-how-link" data-action="open-how">\u2139\uFE0F How to play</div><div class="fineprint" style="margin-top:8px;text-align:center">'+due+' terms due \u2022 '+LEXICON.length+' words in bank</div></div></div>';}
+
+function gameScreen(){var g=state.game;if(!g)return"";var subCls=g.subject.toLowerCase();return topbar()+'<div class="shell"><div class="game-wrap"><div class="subject-head"><div><div class="label">Subject</div><div class="value"><span class="subject-pill '+subCls+'">'+escapeHtml(g.subject)+'</span></div></div><div class="right"><span class="pill">Attempt '+(Math.min(g.rowIndex+1,6))+'/6</span></div></div><div class="hint-line">Use hints<button type="button" data-action="open-clues">here</button></div><div class="board" data-action="focus-input" aria-label="Guess board">'+renderBoard(g)+'</div>'+(state.prefs.showOnScreenKeyboard?renderKeyboard(g):"")+'<div class="under-controls"><button class="btn btn-primary" data-action="submit" aria-label="Submit guess">Submit</button><button class="btn" data-action="toggle-kbd">'+(state.prefs.showOnScreenKeyboard?"Hide keyboard":"Show keyboard")+'</button></div><div class="fineprint" style="text-align:center;margin-top:8px;">Tap the first tile to type with your device keyboard. Press Enter to submit.</div></div></div><input id="hiddenInput" class="mobile-input" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" aria-label="Type your guess" />';}
+
+function renderBoard(g){var rows=[];for(var r=0;r<6;r++){var locked=g.rows[r];var isActiveRow=(r===g.rowIndex)&&g.status==="playing";var letters=isActiveRow?(g.current.padEnd(5," ")):(locked?locked.padEnd(5," "):"     ");var evals=g.evals[r]||Array(5).fill("");var rowClass="row";if(g.invalidRow===r)rowClass+=" shake";var cells="";for(var i=0;i<5;i++){var ch=letters[i]===" "?"":letters[i];var st=evals[i]||"";var isEmpty=!ch&&!st;var reveal=(g.revealRow===r&&!shouldReduceMotion());var delay=reveal?(i*90):0;var cls="tile";if(isEmpty)cls+=" empty";if(isActiveRow)cls+=" active";if(st)cls+=" "+st;if(reveal)cls+=" reveal";var style=reveal?' style="animation-delay:'+delay+'ms"':"";var attrs=isActiveRow&&i===0?' data-action="focus-input" tabindex="0" role="button" aria-label="Type guess"':"";cells+='<div class="'+cls+'"'+style+attrs+'>'+ch+'</div>';}rows.push('<div class="'+rowClass+'">'+cells+'</div>');}return rows.join("");}
+
+function renderInlineHints(g){if(!g||!g.entry||!g.entry.hints)return"";var html="";for(var i=0;i<g.entry.hints.length;i++){var revealed=g.cluesRevealed[i];html+='<div class="hint-card'+(revealed?"":" locked")+'" data-action="reveal-clue" data-index="'+i+'"><span class="hint-num">#'+(i+1)+'</span> '+escapeHtml(g.entry.hints[i])+'</div>';}return html;}
+
+function renderKeyboard(g){var rows=["QWERTYUIOP".split(""),"ASDFGHJKL".split(""),["Z","X","C","V","B","N","M","DEL"]];var html='<div class="kbd" aria-label="On-screen keyboard">';for(var ri=0;ri<rows.length;ri++){html+='<div class="kbd-row">';for(var ki=0;ki<rows[ri].length;ki++){var k=rows[ri][ki];var st=g.keyState[k]||"";var cls="key";if(st)cls+=" "+st;if(k==="DEL")cls+=" wide";html+='<button class="'+cls+'" data-action="key" data-key="'+k+'" aria-label="'+(k==="DEL"?"Delete":k)+'">'+k+'</button>';}html+='</div>';}html+='</div>';return html;}
+
+function resultsScreen(){var r=state.lastResult;var stats=Object.assign({},DEFAULT_STATS,safeParse(STORAGE.stats,{}));var acc=stats.games?Math.round((stats.wins/stats.games)*100):0;var durationSec=r?Math.round(r.durationMs/1000):0;var outcome=r&&r.won?"Solved":"Not Solved";var attemptsTxt=r&&r.won?r.attempts+"/6":"\u2014";var entry=null;for(var i=0;i<LEXICON.length;i++){if(LEXICON[i].word===(r&&r.answer)){entry=LEXICON[i];break;}}var note=entry&&entry.hints?entry.hints[0]:"";var subCls=(r&&r.subject||"").toLowerCase();var emoji=r&&r.won?"\uD83C\uDF89":"\uD83D\uDCA1";return topbar()+'<div class="shell"><div class="results"><div class="card" style="padding:18px;"><div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;"><div style="font-size:32px;">'+emoji+'</div><div><div style="font-weight:900;font-size:22px;">'+outcome+'</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;"><span class="pill">Attempts: <strong>'+attemptsTxt+'</strong></span><span class="pill">Score: <strong>'+(r?r.roundScore:0)+'</strong>/100</span><span class="pill">Time: <strong>'+durationSec+'s</strong></span></div></div></div><div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;"><span class="pill" style="font-size:16px;padding:10px 18px;font-weight:900;letter-spacing:3px;">'+escapeHtml(r?r.answer:"")+'</span><span class="subject-pill '+subCls+'">'+escapeHtml(r?r.subject:"")+'</span><span class="pill">Hints used: <strong>'+(r?r.cluesUsed:0)+'</strong></span></div>'+(note?'<div class="card" style="margin-top:14px;padding:14px;border-radius:18px;"><div class="section-title" style="margin:0 0 6px 0;">Key fact</div><div style="font-weight:700;line-height:1.55;font-size:14px;">'+escapeHtml(note)+'</div></div>':"")+'</div><div class="results-grid"><div class="card" style="padding:16px;"><div class="section-title">Your Performance</div><div class="kv"><div class="kv-row"><div class="k">Recall Index</div><div class="v">'+stats.recallIndex+'/100</div></div><div class="kv-row"><div class="k">Accuracy</div><div class="v">'+acc+'%</div></div><div class="kv-row"><div class="k">Streak</div><div class="v">'+stats.streak+' day'+(stats.streak!==1?"s":"")+'</div></div><div class="kv-row"><div class="k">Median attempts</div><div class="v">'+(stats.medianAttempts||"\u2014")+'</div></div><div class="kv-row"><div class="k">Best streak</div><div class="v">'+stats.bestStreak+'</div></div></div></div><div class="card" style="padding:16px;"><div class="section-title">Attempts Distribution</div><div class="chart">'+renderAttemptChart(stats.attemptsHist)+'</div><div class="fineprint" style="margin-top:10px;">1\u20136 = solved; 0 = not solved.</div></div></div><div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:4px;"><button class="btn btn-primary" data-action="next-round">Play Again</button><button class="btn" data-action="home">Home</button></div></div></div>';}
+
+function renderAttemptChart(hist){var max=1;for(var i=0;i<hist.length;i++){if(hist[i]>max)max=hist[i];}var w=320,h=160,pad=18,barW=(w-pad*2)/7,barGap=6;var bars="";for(var i=0;i<7;i++){var v=hist[i]||0;var bh=Math.round((v/max)*(h-pad*2));var x=pad+i*barW+barGap/2;var y=h-pad-bh;var bw=barW-barGap;bars+='<g><rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+bh+'" rx="10" ry="10" fill="currentColor" opacity="'+(i===0?.28:.52)+'"></rect><text x="'+(x+bw/2)+'" y="'+(h-6)+'" text-anchor="middle" font-size="11" fill="currentColor" opacity=".75" font-weight="800">'+(i===0?"0":i)+'</text><text x="'+(x+bw/2)+'" y="'+(y-6)+'" text-anchor="middle" font-size="11" fill="currentColor" opacity=".85" font-weight="900">'+v+'</text></g>';}return'<svg width="100%" viewBox="0 0 '+w+' '+h+'" role="img" aria-label="Attempts distribution">'+bars+'</svg>';}
+
+function modalMarkup(){if(!state.modal)return"";if(state.modal==="how"){return modal("How to Play",'<p style="margin-top:0;">JUGGLE is a rapid retrieval-practice tool. You have <strong>6</strong> attempts to solve a <strong>5-letter</strong> medical term.</p><div class="card" style="border-radius:18px;padding:12px;"><div class="section-title" style="margin:0 0 8px 0;">Feedback</div><div class="fineprint"><strong style="color:var(--ok);">Green</strong> = right letter, right place.<br/><strong style="color:var(--maybe);">Amber</strong> = letter is present, different place.<br/><strong style="color:var(--no);">Brick</strong> = letter is not in the term.</div></div><p class="fineprint" style="margin-bottom:0;">Clinical hints are available when needed; using them reduces round score.</p>');}if(state.modal==="clues"){var g=state.game;if(!g)return"";var hints=g.entry.hints||[];var cards="";for(var i=0;i<hints.length;i++){var revealed=g.cluesRevealed[i];cards+='<div class="clue"><div class="hdr"><div class="name">Hint '+(i+1)+'</div>'+(revealed?'<span class="pill">Revealed</span>':'<button class="btn btn-small" data-action="reveal-clue" data-index="'+i+'">Reveal (\u221212)</button>')+'</div>'+(revealed?'<div class="text">'+escapeHtml(hints[i])+'</div>':'<div class="hidden">Hidden \u2014 reveal only if needed.</div>')+'</div>';}return modal("Clinical Hints",'<p style="margin-top:0;" class="fineprint">Use hints sparingly. Immediate recall strengthens memory.</p><div style="display:grid;gap:10px;">'+cards+'</div>');}if(state.modal==="stats"){var stats=Object.assign({},DEFAULT_STATS,safeParse(STORAGE.stats,{}));var acc=stats.games?Math.round((stats.wins/stats.games)*100):0;return modal("Stats & Settings",'<div class="card" style="border-radius:18px;padding:12px;margin-bottom:12px;"><div class="section-title" style="margin:0 0 10px 0;">Summary</div><div class="kv"><div class="kv-row"><div class="k">Games</div><div class="v">'+stats.games+'</div></div><div class="kv-row"><div class="k">Wins</div><div class="v">'+stats.wins+'</div></div><div class="kv-row"><div class="k">Accuracy</div><div class="v">'+acc+'%</div></div><div class="kv-row"><div class="k">Recall Index</div><div class="v">'+stats.recallIndex+'/100</div></div><div class="kv-row"><div class="k">Streak</div><div class="v">'+stats.streak+' day'+(stats.streak!==1?"s":"")+'</div></div></div></div><div style="display:flex;gap:10px;flex-wrap:wrap;"><button class="btn btn-ghost btn-small" data-action="reset-stats">Reset stats</button></div>');}return"";}
+
+function modal(title,bodyHtml){return'<div class="backdrop" role="dialog" aria-modal="true" aria-label="'+escapeHtml(title)+'"><div class="modal" role="document"><div class="modal-head"><div class="modal-title">'+escapeHtml(title)+'</div><button class="iconbtn" data-action="close-modal" aria-label="Close">'+icon("close")+'</button></div><div class="modal-body">'+bodyHtml+'</div></div></div>';}
+function focusGameInput(){var inp=document.getElementById('hiddenInput');if(!inp||state.screen!=="game")return;state.inputActive=true;inp.classList.add('active');inp.focus({preventScroll:true});}function blurGameInput(){state.inputActive=false;var inp=document.getElementById('hiddenInput');if(!inp)return;inp.blur();inp.classList.remove('active');inp.value='';}
+
+function render(){var html="";if(state.screen==="landing")html=landing();else if(state.screen==="game")html=gameScreen();else if(state.screen==="results")html=resultsScreen();html+=state.modal?modalMarkup():"";html+=state.toast?'<div class="toast" role="status">'+escapeHtml(state.toast)+'</div>':"";app.innerHTML=html;if(state.screen==="game"&&state.inputActive&&!state.modal){var inp=document.getElementById("hiddenInput");if(inp){inp.classList.add("active");setTimeout(function(){try{inp.focus({preventScroll:true});}catch(e){inp.focus();}},0);}}}
+
+/* ═══ EVENTS ═══ */
+document.addEventListener("click",function(e){var target=e.target.closest("[data-action]");if(!target)return;var action=target.getAttribute("data-action");switch(action){case"toggle-theme":setTheme(state.theme==="dark"?"light":"dark");render();break;case"start-game":case"continue-guest":case"next-round":startGame();break;case"home":goHome();break;case"open-how":openModal("how");break;case"open-clues":if(state.screen==="game")openModal("clues");else toast("Start a round to view hints");break;case"open-stats":openModal("stats");break;case"close-modal":closeModal();break;case"toggle-kbd":setPref("showOnScreenKeyboard",!state.prefs.showOnScreenKeyboard);break;case"submit":submitGuess();break;case"key":var k=target.getAttribute("data-key");if(!k)break;if(k==="DEL")backspace();else inputLetter(k);break;case"focus-input":focusGameInput();break;case"reveal-clue":var idx=Number(target.getAttribute("data-index"));if(isFinite(idx))revealClue(idx);break;case"reset-stats":safeWrite(STORAGE.stats,DEFAULT_STATS);safeWrite(STORAGE.lex,{});recentSave([]);toast("Progress reset");render();break;}});
+
+document.addEventListener("keydown",function(e){if(e.key==="Escape"&&state.modal){closeModal();return;}if(state.screen!=="game")return;if(state.modal)return;var g=state.game;if(!g||g.status!=="playing")return;if(e.key==="Enter"){e.preventDefault();submitGuess();return;}if(e.key==="Backspace"){e.preventDefault();backspace();return;}if(/^[a-zA-Z]$/.test(e.key)){inputLetter(e.key.toUpperCase());return;}});
+
+document.addEventListener("input",function(e){var t=e.target;if(!(t instanceof HTMLInputElement))return;if(t.id!=="hiddenInput")return;if(state.screen!=="game")return;var g=state.game;if(!g||g.status!=="playing")return;var raw=(t.value||"").toUpperCase();var letters=raw.replace(/[^A-Z]/g,"");if(!letters)return;for(var i=0;i<letters.length;i++){if(g.current.length<5)inputLetter(letters[i]);}t.value="";});
+
+render();
+})();
+</script>
+</body>
+</html>
